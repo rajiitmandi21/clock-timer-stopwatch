@@ -11,7 +11,7 @@ import { Timer, Clock, Target, Calendar, Play, Pause, RotateCcw, Zap, Moon, Sun 
 import { cn } from "@/lib/utils"
 
 // Tool types
-type Tool = "stopwatch" | "timer" | "clock" | "countdown" | "datediff"
+type Tool = "stopwatch" | "timer" | "clock" | "countdown" | "datediff" | "pomodoro"
 
 export default function ChronoChaos() {
   // Global state
@@ -64,6 +64,20 @@ export default function ChronoChaos() {
   const [dateTo, setDateTo] = useState("")
   const [dateDiff, setDateDiff] = useState<string>("")
 
+  // Pomodoro state
+  const [pomodoroTime, setPomodoroTime] = useState(25 * 60) // 25 minutes in seconds
+  const [pomodoroOriginal, setPomodoroOriginal] = useState(25 * 60)
+  const [pomodoroRunning, setPomodoroRunning] = useState(false)
+  const [pomodoroMode, setPomodoroMode] = useState<"focus" | "break">("focus")
+  const [pomodoroSession, setPomodoroSession] = useState(1)
+  const [pomodoroSettings, setPomodoroSettings] = useState({
+    focusDuration: 25,
+    breakDuration: 5,
+    soundEnabled: true,
+    notificationsEnabled: true,
+  })
+  const pomodoroIntervalRef = useRef<NodeJS.Timeout | null>(null)
+
   // Format helpers
   const formatStopwatchTime = (ms: number) => {
     const totalSeconds = Math.floor(ms / 1000)
@@ -88,6 +102,25 @@ export default function ChronoChaos() {
   const getTimezoneDisplayName = (timezone: string) => {
     const found = commonTimezones.find((tz) => tz.value === timezone)
     return found ? found.label : timezone
+  }
+
+  const formatPomodoroTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60)
+    const secs = seconds % 60
+    return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`
+  }
+
+  const getPomodoroProgressIcon = (seconds: number, total: number) => {
+    const progress = (total - seconds) / total
+    if (progress < 0.125) return "○"
+    if (progress < 0.25) return "◔"
+    if (progress < 0.375) return "◑"
+    if (progress < 0.5) return "◕"
+    if (progress < 0.625) return "●"
+    if (progress < 0.75) return "◕"
+    if (progress < 0.875) return "◑"
+    if (progress < 1) return "◔"
+    return "●"
   }
 
   // Update document title and favicon based on active tab only
@@ -131,6 +164,20 @@ export default function ChronoChaos() {
         title = `📅 Date Difference`
         favicon = "📅"
         break
+      case "pomodoro":
+        if (pomodoroRunning) {
+          const progressIcon = getPomodoroProgressIcon(pomodoroTime, pomodoroOriginal)
+          const modeText = pomodoroMode === "focus" ? "Focus" : "Break"
+          title = `${progressIcon} ${modeText} | ${formatPomodoroTime(pomodoroTime)}`
+          favicon = pomodoroMode === "focus" ? "🍅" : "☕"
+        } else if (pomodoroTime === 0) {
+          title = `● Done! - Pomodoro`
+          favicon = "✅"
+        } else {
+          title = `🍅 Pomodoro`
+          favicon = "🍅"
+        }
+        break
     }
 
     document.title = title
@@ -151,6 +198,10 @@ export default function ChronoChaos() {
     countdownTime,
     countdownTarget,
     selectedTimezone,
+    pomodoroTime,
+    pomodoroRunning,
+    pomodoroMode,
+    pomodoroOriginal,
   ])
 
   // Keyboard shortcuts
@@ -192,7 +243,7 @@ export default function ChronoChaos() {
   }, [activeTab, stopwatchRunning, timerRunning])
 
   const navigateTab = (direction: number) => {
-    const tools: Tool[] = ["stopwatch", "timer", "clock", "countdown", "datediff"]
+    const tools: Tool[] = ["stopwatch", "timer", "clock", "countdown", "datediff", "pomodoro"]
     const currentIndex = tools.indexOf(activeTab)
     const newIndex = (currentIndex + direction + tools.length) % tools.length
     setActiveTab(tools[newIndex])
@@ -272,6 +323,100 @@ export default function ChronoChaos() {
     setTimerRunning(false)
     if (timerIntervalRef.current) {
       clearInterval(timerIntervalRef.current)
+    }
+  }
+
+  // Pomodoro functions
+  const startPomodoro = () => {
+    setPomodoroRunning(true)
+    pomodoroIntervalRef.current = setInterval(() => {
+      setPomodoroTime((prev) => {
+        if (prev <= 1) {
+          // Session completed
+          setPomodoroRunning(false)
+          handlePomodoroComplete()
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
+  }
+
+  const pausePomodoro = () => {
+    setPomodoroRunning(false)
+    if (pomodoroIntervalRef.current) {
+      clearInterval(pomodoroIntervalRef.current)
+    }
+  }
+
+  const resetPomodoro = () => {
+    setPomodoroRunning(false)
+    setPomodoroMode("focus")
+    setPomodoroSession(1)
+    const focusTime = pomodoroSettings.focusDuration * 60
+    setPomodoroTime(focusTime)
+    setPomodoroOriginal(focusTime)
+    if (pomodoroIntervalRef.current) {
+      clearInterval(pomodoroIntervalRef.current)
+    }
+  }
+
+  const handlePomodoroComplete = () => {
+    // Play sound if enabled
+    if (pomodoroSettings.soundEnabled) {
+      // Create a simple beep sound
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
+      const oscillator = audioContext.createOscillator()
+      const gainNode = audioContext.createGain()
+
+      oscillator.connect(gainNode)
+      gainNode.connect(audioContext.destination)
+
+      oscillator.frequency.value = pomodoroMode === "focus" ? 800 : 600
+      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime)
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 1)
+
+      oscillator.start(audioContext.currentTime)
+      oscillator.stop(audioContext.currentTime + 1)
+    }
+
+    // Vibrate if supported
+    if ("vibrate" in navigator) {
+      navigator.vibrate([200, 100, 200])
+    }
+
+    // Show notification if enabled and permitted
+    if (pomodoroSettings.notificationsEnabled && "Notification" in window && Notification.permission === "granted") {
+      const modeText = pomodoroMode === "focus" ? "Focus" : "Break"
+      new Notification(`${modeText} session completed!`, {
+        body: pomodoroMode === "focus" ? "Time for a break!" : "Ready for the next focus session?",
+        icon: pomodoroMode === "focus" ? "☕" : "🍅",
+      })
+    }
+
+    // Auto-switch to next mode
+    setTimeout(() => {
+      if (pomodoroMode === "focus") {
+        // Switch to break
+        setPomodoroMode("break")
+        const breakTime = pomodoroSettings.breakDuration * 60
+        setPomodoroTime(breakTime)
+        setPomodoroOriginal(breakTime)
+      } else {
+        // Switch to focus and increment session
+        setPomodoroMode("focus")
+        setPomodoroSession((prev) => prev + 1)
+        const focusTime = pomodoroSettings.focusDuration * 60
+        setPomodoroTime(focusTime)
+        setPomodoroOriginal(focusTime)
+      }
+    }, 1000)
+  }
+
+  const requestNotificationPermission = async () => {
+    if ("Notification" in window && Notification.permission === "default") {
+      const permission = await Notification.requestPermission()
+      setPomodoroSettings((prev) => ({ ...prev, notificationsEnabled: permission === "granted" }))
     }
   }
 
@@ -361,6 +506,7 @@ export default function ChronoChaos() {
       if (timerIntervalRef.current) clearInterval(timerIntervalRef.current)
       if (clockIntervalRef.current) clearInterval(clockIntervalRef.current)
       if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current)
+      if (pomodoroIntervalRef.current) clearInterval(pomodoroIntervalRef.current)
     }
   }, [])
 
@@ -395,7 +541,7 @@ export default function ChronoChaos() {
       <div className="max-w-4xl mx-auto p-4">
         <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as Tool)} className="w-full">
           {/* Desktop Tab Navigation */}
-          <TabsList className="hidden lg:grid w-full grid-cols-5 mb-8">
+          <TabsList className="hidden lg:grid w-full grid-cols-6 mb-8">
             <TabsTrigger value="stopwatch" className="flex items-center gap-2">
               <Timer className="w-4 h-4" />
               Stopwatch
@@ -415,6 +561,10 @@ export default function ChronoChaos() {
             <TabsTrigger value="datediff" className="flex items-center gap-2">
               <Calendar className="w-4 h-4" />
               Date Diff
+            </TabsTrigger>
+            <TabsTrigger value="pomodoro" className="flex items-center gap-2">
+              <div className="text-sm">🍅</div>
+              Pomodoro
             </TabsTrigger>
           </TabsList>
 
@@ -731,43 +881,193 @@ export default function ChronoChaos() {
             </Card>
           </TabsContent>
 
+          {/* Pomodoro Tab */}
+          <TabsContent value="pomodoro" className="mt-0">
+            <Card className="w-full max-w-2xl mx-auto">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-center justify-center">
+                  <div className="text-xl">🍅</div>
+                  Pomodoro Timer
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="text-center">
+                  <div className="text-6xl font-mono font-bold text-red-600 mb-2">
+                    {formatPomodoroTime(pomodoroTime)}
+                  </div>
+                  <div className="flex items-center justify-center gap-2 mb-4">
+                    <Badge className={cn("text-white", pomodoroMode === "focus" ? "bg-red-600" : "bg-green-600")}>
+                      {pomodoroMode === "focus" ? "🍅 Focus" : "☕ Break"} Session {pomodoroSession}
+                    </Badge>
+                    {pomodoroRunning && <Badge className="bg-blue-500 text-white">Running</Badge>}
+                    {pomodoroTime === 0 && !pomodoroRunning && (
+                      <Badge variant="secondary" className="text-lg">
+                        Session Complete! 🎉
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+
+                {!pomodoroRunning && pomodoroTime > 0 && (
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium mb-2">Focus Duration (min)</label>
+                        <Input
+                          type="number"
+                          value={pomodoroSettings.focusDuration}
+                          onChange={(e) => {
+                            const value = Number(e.target.value) || 25
+                            setPomodoroSettings((prev) => ({ ...prev, focusDuration: value }))
+                            if (pomodoroMode === "focus") {
+                              const newTime = value * 60
+                              setPomodoroTime(newTime)
+                              setPomodoroOriginal(newTime)
+                            }
+                          }}
+                          className="text-center h-12"
+                          min="1"
+                          max="60"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-2">Break Duration (min)</label>
+                        <Input
+                          type="number"
+                          value={pomodoroSettings.breakDuration}
+                          onChange={(e) => {
+                            const value = Number(e.target.value) || 5
+                            setPomodoroSettings((prev) => ({ ...prev, breakDuration: value }))
+                            if (pomodoroMode === "break") {
+                              const newTime = value * 60
+                              setPomodoroTime(newTime)
+                              setPomodoroOriginal(newTime)
+                            }
+                          }}
+                          className="text-center h-12"
+                          min="1"
+                          max="30"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <label className="text-sm font-medium">Sound Notifications</label>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setPomodoroSettings((prev) => ({ ...prev, soundEnabled: !prev.soundEnabled }))}
+                        >
+                          {pomodoroSettings.soundEnabled ? "🔊 On" : "🔇 Off"}
+                        </Button>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <label className="text-sm font-medium">Browser Notifications</label>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            if (pomodoroSettings.notificationsEnabled) {
+                              setPomodoroSettings((prev) => ({ ...prev, notificationsEnabled: false }))
+                            } else {
+                              requestNotificationPermission()
+                            }
+                          }}
+                        >
+                          {pomodoroSettings.notificationsEnabled ? "🔔 On" : "🔕 Off"}
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex justify-center gap-4">
+                  <Button
+                    onClick={pomodoroRunning ? pausePomodoro : startPomodoro}
+                    size="lg"
+                    className="bg-red-600 hover:bg-red-700 min-w-[44px] h-[44px]"
+                    disabled={pomodoroTime === 0}
+                  >
+                    {pomodoroRunning ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
+                  </Button>
+                  <Button
+                    onClick={resetPomodoro}
+                    size="lg"
+                    variant="outline"
+                    className="min-w-[44px] h-[44px] bg-transparent"
+                  >
+                    <RotateCcw className="w-5 h-5" />
+                  </Button>
+                </div>
+
+                {pomodoroOriginal > 0 && (
+                  <div className="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-3">
+                    <div
+                      className={cn(
+                        "h-3 rounded-full transition-all duration-1000",
+                        pomodoroMode === "focus" ? "bg-red-600" : "bg-green-600",
+                      )}
+                      style={{ width: `${((pomodoroOriginal - pomodoroTime) / pomodoroOriginal) * 100}%` }}
+                    />
+                  </div>
+                )}
+
+                <div className="text-center text-sm text-gray-600 dark:text-gray-400">
+                  <p>
+                    Focus for {pomodoroSettings.focusDuration} minutes, then take a {pomodoroSettings.breakDuration}
+                    -minute break.
+                  </p>
+                  <p className="mt-1">Stay productive with the Pomodoro Technique! 🍅</p>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
           {/* Mobile Bottom Navigation */}
           <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-gray-200 dark:border-slate-700">
-            <TabsList className="grid w-full grid-cols-5 h-16 bg-transparent">
+            <TabsList className="grid w-full grid-cols-6 h-16 bg-transparent">
               <TabsTrigger
                 value="stopwatch"
                 className="flex-col gap-1 h-full data-[state=active]:bg-purple-100 dark:data-[state=active]:bg-purple-900/50"
               >
-                <Timer className="w-5 h-5" />
+                <Timer className="w-4 h-4" />
                 <span className="text-xs">Stopwatch</span>
               </TabsTrigger>
               <TabsTrigger
                 value="timer"
                 className="flex-col gap-1 h-full data-[state=active]:bg-pink-100 dark:data-[state=active]:bg-pink-900/50"
               >
-                <Timer className="w-5 h-5" />
+                <Timer className="w-4 h-4" />
                 <span className="text-xs">Timer</span>
               </TabsTrigger>
               <TabsTrigger
                 value="clock"
                 className="flex-col gap-1 h-full data-[state=active]:bg-blue-100 dark:data-[state=active]:bg-blue-900/50"
               >
-                <Clock className="w-5 h-5" />
+                <Clock className="w-4 h-4" />
                 <span className="text-xs">Clock</span>
               </TabsTrigger>
               <TabsTrigger
                 value="countdown"
                 className="flex-col gap-1 h-full data-[state=active]:bg-green-100 dark:data-[state=active]:bg-green-900/50"
               >
-                <Target className="w-5 h-5" />
+                <Target className="w-4 h-4" />
                 <span className="text-xs">Countdown</span>
               </TabsTrigger>
               <TabsTrigger
                 value="datediff"
                 className="flex-col gap-1 h-full data-[state=active]:bg-orange-100 dark:data-[state=active]:bg-orange-900/50"
               >
-                <Calendar className="w-5 h-5" />
+                <Calendar className="w-4 h-4" />
                 <span className="text-xs">Date Diff</span>
+              </TabsTrigger>
+              <TabsTrigger
+                value="pomodoro"
+                className="flex-col gap-1 h-full data-[state=active]:bg-red-100 dark:data-[state=active]:bg-red-900/50"
+              >
+                <div className="text-sm">🍅</div>
+                <span className="text-xs">Pomodoro</span>
               </TabsTrigger>
             </TabsList>
           </div>
