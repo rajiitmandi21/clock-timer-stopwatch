@@ -10,13 +10,20 @@ import { Badge } from "@/components/ui/badge"
 import { Timer, Clock, Target, Calendar, Play, Pause, RotateCcw, Zap, Moon, Sun } from "lucide-react"
 import { cn } from "@/lib/utils"
 
+// Add import for the landing page component
+import { LandingPage } from "@/components/landing-page"
+
 // Tool types
 type Tool = "stopwatch" | "timer" | "clock" | "countdown" | "datediff" | "pomodoro"
 
 export default function ChronoChaos() {
+  // Add landing page state at the top of the component
+  const [showLandingPage, setShowLandingPage] = useState(false)
+
   // Global state
   const [activeTab, setActiveTab] = useState<Tool>("clock")
   const [darkMode, setDarkMode] = useState(false)
+  const [autoMode, setAutoMode] = useState(true)
 
   // Stopwatch state
   const [stopwatchTime, setStopwatchTime] = useState(0)
@@ -30,12 +37,15 @@ export default function ChronoChaos() {
   const [timerRunning, setTimerRunning] = useState(false)
   const [timerInput, setTimerInput] = useState({ minutes: 5, seconds: 0 })
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null)
+  const [autoRestart, setAutoRestart] = useState(false)
 
   // Clock state
   const [currentTime, setCurrentTime] = useState(new Date())
   const [is24Hour, setIs24Hour] = useState(true)
   const [selectedTimezone, setSelectedTimezone] = useState(Intl.DateTimeFormat().resolvedOptions().timeZone)
   const clockIntervalRef = useRef<NodeJS.Timeout | null>(null)
+  const [analogClock, setAnalogClock] = useState(false)
+  const [timezonePins, setTimezonePins] = useState<string[]>([])
 
   // Common timezones list
   const commonTimezones = [
@@ -63,6 +73,7 @@ export default function ChronoChaos() {
   const [dateFrom, setDateFrom] = useState("")
   const [dateTo, setDateTo] = useState("")
   const [dateDiff, setDateDiff] = useState<string>("")
+  const [includeToday, setIncludeToday] = useState(false)
 
   // Pomodoro state
   const [pomodoroTime, setPomodoroTime] = useState(25 * 60) // 25 minutes in seconds
@@ -75,18 +86,80 @@ export default function ChronoChaos() {
     breakDuration: 5,
     soundEnabled: true,
     notificationsEnabled: true,
+    autoStartNext: false,
   })
   const pomodoroIntervalRef = useRef<NodeJS.Timeout | null>(null)
 
-  // Format helpers
+  // Add productivity stats tracking
+  const [dailyStats, setDailyStats] = useState({
+    pomodorosCompleted: 0,
+    focusTimeTotal: 0,
+    date: new Date().toDateString(),
+  })
+
+  // Update the formatStopwatchTime function to include milliseconds display
   const formatStopwatchTime = (ms: number) => {
     const totalSeconds = Math.floor(ms / 1000)
     const centiseconds = Math.floor((ms % 1000) / 10)
     const minutes = Math.floor(totalSeconds / 60)
     const seconds = totalSeconds % 60
-    return `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}.${centiseconds.toString().padStart(2, "0")}`
+    const hours = Math.floor(minutes / 60)
+    const displayMinutes = minutes % 60
+
+    if (hours > 0) {
+      return `${hours}:${displayMinutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}.${centiseconds.toString().padStart(2, "0")}`
+    }
+    return `${displayMinutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}.${centiseconds.toString().padStart(2, "0")}`
   }
 
+  // Add lap export functionality
+  const exportLaps = () => {
+    const lapData = laps.map((lap, index) => `Lap ${index + 1}: ${formatStopwatchTime(lap)}`).join("\n")
+    const timestamp = new Date().toLocaleString()
+    const exportText = `ChronoChaos Stopwatch Session - ${timestamp}\n\n${lapData}\n\nTotal Time: ${formatStopwatchTime(stopwatchTime)}`
+
+    navigator.clipboard.writeText(exportText).then(() => {
+      // Could add a toast notification here
+    })
+  }
+
+  // Add circular progress component for timer
+  const CircularProgress = ({ progress, size = 120, strokeWidth = 8, color = "rgb(236, 72, 153)" }) => {
+    const radius = (size - strokeWidth) / 2
+    const circumference = radius * 2 * Math.PI
+    const strokeDasharray = circumference
+    const strokeDashoffset = circumference - progress * circumference
+
+    return (
+      <div className="relative inline-flex items-center justify-center">
+        <svg width={size} height={size} className="transform -rotate-90">
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            stroke="currentColor"
+            strokeWidth={strokeWidth}
+            fill="none"
+            className="text-gray-200 dark:text-gray-700"
+          />
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            stroke={color}
+            strokeWidth={strokeWidth}
+            fill="none"
+            strokeDasharray={strokeDasharray}
+            strokeDashoffset={strokeDashoffset}
+            strokeLinecap="round"
+            className="transition-all duration-300 ease-in-out"
+          />
+        </svg>
+      </div>
+    )
+  }
+
+  // Format helpers
   const formatTimerTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60)
     const secs = seconds % 60
@@ -123,7 +196,7 @@ export default function ChronoChaos() {
     return "●"
   }
 
-  // Update document title and favicon based on active tab only
+  // Update tab title logic to be more specific and include progress indicators
   useEffect(() => {
     let title = "ChronoChaos"
     let favicon = "⚡"
@@ -131,17 +204,23 @@ export default function ChronoChaos() {
     switch (activeTab) {
       case "stopwatch":
         if (stopwatchRunning) {
-          title = `⏱️ ${formatStopwatchTime(stopwatchTime)} - Stopwatch`
+          title = `⏱️ ${formatStopwatchTime(stopwatchTime)} - Running`
+          favicon = "⏱️"
+        } else if (stopwatchTime > 0) {
+          title = `⏱️ ${formatStopwatchTime(stopwatchTime)} - Paused`
           favicon = "⏱️"
         } else {
-          title = `⏱️ ${formatStopwatchTime(stopwatchTime)} - Stopwatch (Paused)`
+          title = `⏱️ Stopwatch`
           favicon = "⏱️"
         }
         break
       case "timer":
         if (timerRunning && timerTime > 0) {
-          title = `⏳ ${formatTimerTime(timerTime)} left - Timer`
+          title = `⏳ ${formatTimerTime(timerTime)} left`
           favicon = "⏳"
+        } else if (timerTime === 0 && timerOriginal > 0) {
+          title = `⏳ Timer Complete!`
+          favicon = "✅"
         } else {
           title = `⏳ Timer`
           favicon = "⏳"
@@ -152,9 +231,19 @@ export default function ChronoChaos() {
         favicon = "🕒"
         break
       case "countdown":
-        if (countdownTarget) {
-          title = `🎯 ${countdownTime.days}d ${countdownTime.hours}h ${countdownTime.minutes}m - Countdown`
+        if (
+          countdownTarget &&
+          (countdownTime.days > 0 || countdownTime.hours > 0 || countdownTime.minutes > 0 || countdownTime.seconds > 0)
+        ) {
+          const parts = []
+          if (countdownTime.days > 0) parts.push(`${countdownTime.days}d`)
+          if (countdownTime.hours > 0) parts.push(`${countdownTime.hours}h`)
+          if (countdownTime.minutes > 0) parts.push(`${countdownTime.minutes}m`)
+          title = `🎯 ${parts.join(" ")} left`
           favicon = "🎯"
+        } else if (countdownTarget) {
+          title = `🎯 Countdown Complete!`
+          favicon = "✅"
         } else {
           title = `🎯 Countdown`
           favicon = "🎯"
@@ -292,7 +381,13 @@ export default function ChronoChaos() {
       setTimerTime((prev) => {
         if (prev <= 1) {
           setTimerRunning(false)
+          clearInterval(timerIntervalRef.current)
           // Timer finished - could add notification here
+          if (autoRestart) {
+            setTimeout(() => {
+              startTimer()
+            }, 1000)
+          }
           return 0
         }
         return prev - 1
@@ -361,6 +456,27 @@ export default function ChronoChaos() {
     }
   }
 
+  // Add confetti animation function
+  const triggerConfetti = () => {
+    // Simple confetti effect using CSS animations
+    const confettiContainer = document.createElement("div")
+    confettiContainer.className = "fixed inset-0 pointer-events-none z-50"
+    document.body.appendChild(confettiContainer)
+
+    for (let i = 0; i < 50; i++) {
+      const confetti = document.createElement("div")
+      confetti.className = "absolute w-2 h-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full animate-bounce"
+      confetti.style.left = Math.random() * 100 + "%"
+      confetti.style.animationDelay = Math.random() * 2 + "s"
+      confetti.style.animationDuration = Math.random() * 2 + 1 + "s"
+      confettiContainer.appendChild(confetti)
+    }
+
+    setTimeout(() => {
+      document.body.removeChild(confettiContainer)
+    }, 3000)
+  }
+
   const handlePomodoroComplete = () => {
     // Play sound if enabled
     if (pomodoroSettings.soundEnabled) {
@@ -394,6 +510,32 @@ export default function ChronoChaos() {
       })
     }
 
+    // Update daily stats
+    setDailyStats((prev) => {
+      const today = new Date().toDateString()
+      if (prev.date !== today) {
+        // Reset for new day
+        return {
+          pomodorosCompleted: pomodoroMode === "focus" ? 1 : 0,
+          focusTimeTotal: pomodoroMode === "focus" ? pomodoroSettings.focusDuration : 0,
+          date: today,
+        }
+      } else {
+        return {
+          ...prev,
+          pomodorosCompleted: pomodoroMode === "focus" ? prev.pomodorosCompleted + 1 : prev.pomodorosCompleted,
+          focusTimeTotal:
+            pomodoroMode === "focus" ? prev.focusTimeTotal + pomodoroSettings.focusDuration : prev.focusTimeTotal,
+        }
+      }
+    })
+
+    // Confetti animation after 4 Pomodoros
+    if (pomodoroMode === "focus" && (dailyStats.pomodorosCompleted + 1) % 4 === 0) {
+      // Trigger confetti animation
+      triggerConfetti()
+    }
+
     // Auto-switch to next mode
     setTimeout(() => {
       if (pomodoroMode === "focus") {
@@ -409,6 +551,11 @@ export default function ChronoChaos() {
         const focusTime = pomodoroSettings.focusDuration * 60
         setPomodoroTime(focusTime)
         setPomodoroOriginal(focusTime)
+      }
+      if (pomodoroSettings.autoStartNext) {
+        setTimeout(() => {
+          startPomodoro()
+        }, 1000)
       }
     }, 1000)
   }
@@ -510,6 +657,41 @@ export default function ChronoChaos() {
     }
   }, [])
 
+  // Add click-to-copy functionality for clock
+  const copyTimeToClipboard = () => {
+    const timeString = formatClockTime(currentTime)
+    const dateString = new Date().toLocaleDateString("en-US", {
+      weekday: "long",
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+      timeZone: selectedTimezone,
+    })
+    const copyText = `${timeString} - ${dateString} (${getTimezoneDisplayName(selectedTimezone)})`
+
+    navigator.clipboard.writeText(copyText).then(() => {
+      // Could add toast notification
+    })
+  }
+
+  // Add auto dark mode detection
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)")
+    const handleChange = (e) => {
+      if (autoMode) {
+        setDarkMode(e.matches)
+      }
+    }
+
+    mediaQuery.addEventListener("change", handleChange)
+    return () => mediaQuery.removeEventListener("change", handleChange)
+  }, [])
+
+  // Add condition to show landing page at the beginning of the return statement
+  if (showLandingPage) {
+    return <LandingPage onStartApp={() => setShowLandingPage(false)} />
+  }
+
   return (
     <div
       className={cn(
@@ -530,6 +712,9 @@ export default function ChronoChaos() {
           </div>
 
           <div className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" onClick={() => setShowLandingPage(true)} className="text-xs">
+              About
+            </Button>
             <Button variant="ghost" size="sm" onClick={() => setDarkMode(!darkMode)} className="rounded-full">
               {darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </Button>
@@ -611,6 +796,14 @@ export default function ChronoChaos() {
                   >
                     <RotateCcw className="w-5 h-5" />
                   </Button>
+                  <Button
+                    onClick={exportLaps}
+                    size="lg"
+                    variant="outline"
+                    className="min-w-[44px] h-[44px] bg-transparent"
+                  >
+                    Export
+                  </Button>
                 </div>
 
                 {laps.length > 0 && (
@@ -641,7 +834,14 @@ export default function ChronoChaos() {
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="text-center">
-                  <div className="text-6xl font-mono font-bold text-pink-600 mb-4">{formatTimerTime(timerTime)}</div>
+                  <div className="relative inline-block">
+                    <CircularProgress progress={timerOriginal > 0 ? (timerOriginal - timerTime) / timerOriginal : 0} />
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+                      <div className="text-4xl font-mono font-bold text-pink-600 mb-4">
+                        {formatTimerTime(timerTime)}
+                      </div>
+                    </div>
+                  </div>
                   {timerRunning && <Badge className="bg-green-500 text-white">Running</Badge>}
                   {timerTime === 0 && !timerRunning && timerOriginal > 0 && (
                     <Badge variant="secondary" className="text-lg">
@@ -686,6 +886,19 @@ export default function ChronoChaos() {
                   </div>
                 )}
 
+                <div className="flex justify-between items-center mb-4">
+                  <label htmlFor="autoRestart" className="text-sm font-medium">
+                    Auto-Restart
+                  </label>
+                  <input
+                    type="checkbox"
+                    id="autoRestart"
+                    checked={autoRestart}
+                    onChange={(e) => setAutoRestart(e.target.checked)}
+                    className="h-5 w-5 rounded accent-pink-500"
+                  />
+                </div>
+
                 <div className="flex justify-center gap-4">
                   <Button
                     onClick={timerRunning ? pauseTimer : startTimer}
@@ -728,7 +941,12 @@ export default function ChronoChaos() {
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="text-center">
-                  <div className="text-6xl font-mono font-bold text-blue-600 mb-2">{formatClockTime(currentTime)}</div>
+                  <div
+                    className="text-6xl font-mono font-bold text-blue-600 mb-2 cursor-pointer"
+                    onClick={copyTimeToClipboard}
+                  >
+                    {formatClockTime(currentTime)}
+                  </div>
                   <div className="text-xl text-gray-600 dark:text-gray-400 mb-4">
                     {new Date().toLocaleDateString("en-US", {
                       weekday: "long",
@@ -765,6 +983,9 @@ export default function ChronoChaos() {
 
                   <Button onClick={() => setIs24Hour(!is24Hour)} variant="outline" className="w-full h-12 px-8">
                     Switch to {is24Hour ? "12-hour" : "24-hour"}
+                  </Button>
+                  <Button onClick={() => setAnalogClock(!analogClock)} variant="outline" className="w-full h-12 px-8">
+                    Show {analogClock ? "Digital" : "Analog"} Clock
                   </Button>
                 </div>
               </CardContent>
@@ -976,6 +1197,18 @@ export default function ChronoChaos() {
                           }}
                         >
                           {pomodoroSettings.notificationsEnabled ? "🔔 On" : "🔕 Off"}
+                        </Button>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <label className="text-sm font-medium">Auto-start next session</label>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() =>
+                            setPomodoroSettings((prev) => ({ ...prev, autoStartNext: !prev.autoStartNext }))
+                          }
+                        >
+                          {pomodoroSettings.autoStartNext ? "▶️ On" : "⏸️ Off"}
                         </Button>
                       </div>
                     </div>
