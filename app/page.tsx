@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { Timer, Clock, Target, Calendar, Play, Pause, RotateCcw, Zap, Moon, Sun } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -89,10 +90,10 @@ export default function ChronoChaos() {
     return found ? found.label : timezone
   }
 
-  // Update document title and favicon
+  // Update document title and favicon based on active tab only
   useEffect(() => {
     let title = "ChronoChaos"
-    let favicon = "🕒"
+    let favicon = "⚡"
 
     switch (activeTab) {
       case "stopwatch":
@@ -114,7 +115,7 @@ export default function ChronoChaos() {
         }
         break
       case "clock":
-        title = `🕒 ${formatClockTime(currentTime)} - ${getTimezoneDisplayName(selectedTimezone)}`
+        title = `🕒 ${formatClockTime(currentTime)} - Live Clock`
         favicon = "🕒"
         break
       case "countdown":
@@ -390,612 +391,348 @@ export default function ChronoChaos() {
         </div>
       </div>
 
-      {/* Desktop Grid Layout */}
-      <div className="hidden lg:block max-w-7xl mx-auto p-6">
-        <div className="grid grid-cols-2 xl:grid-cols-3 gap-6">
-          {/* Stopwatch Card */}
-          <Card
-            className={cn(
-              "transition-all duration-200 hover:shadow-lg",
-              activeTab === "stopwatch" && "ring-2 ring-purple-500",
-            )}
-          >
-            <CardHeader className="pb-4">
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <Timer className="w-5 h-5 text-purple-600" />
-                Stopwatch
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="text-center">
-                <div className="text-4xl font-mono font-bold text-purple-600 mb-2">
-                  {formatStopwatchTime(stopwatchTime)}
-                </div>
-                {stopwatchRunning && <Badge className="bg-green-500">Running</Badge>}
-              </div>
+      {/* Main Content */}
+      <div className="max-w-4xl mx-auto p-4">
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as Tool)} className="w-full">
+          {/* Desktop Tab Navigation */}
+          <TabsList className="hidden lg:grid w-full grid-cols-5 mb-8">
+            <TabsTrigger value="stopwatch" className="flex items-center gap-2">
+              <Timer className="w-4 h-4" />
+              Stopwatch
+            </TabsTrigger>
+            <TabsTrigger value="timer" className="flex items-center gap-2">
+              <Timer className="w-4 h-4" />
+              Timer
+            </TabsTrigger>
+            <TabsTrigger value="clock" className="flex items-center gap-2">
+              <Clock className="w-4 h-4" />
+              Clock
+            </TabsTrigger>
+            <TabsTrigger value="countdown" className="flex items-center gap-2">
+              <Target className="w-4 h-4" />
+              Countdown
+            </TabsTrigger>
+            <TabsTrigger value="datediff" className="flex items-center gap-2">
+              <Calendar className="w-4 h-4" />
+              Date Diff
+            </TabsTrigger>
+          </TabsList>
 
-              <div className="flex justify-center gap-2">
-                <Button
-                  onClick={stopwatchRunning ? pauseStopwatch : startStopwatch}
-                  size="sm"
-                  className="bg-purple-600 hover:bg-purple-700"
-                >
-                  {stopwatchRunning ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-                </Button>
-                {stopwatchRunning && (
-                  <Button onClick={addLap} size="sm" variant="outline">
-                    <Zap className="w-4 h-4" />
-                  </Button>
-                )}
-                <Button onClick={resetStopwatch} size="sm" variant="outline">
-                  <RotateCcw className="w-4 h-4" />
-                </Button>
-              </div>
-
-              {laps.length > 0 && (
-                <div className="max-h-32 overflow-y-auto space-y-1">
-                  {laps.map((lap, index) => (
-                    <div
-                      key={index}
-                      className="text-sm font-mono text-center py-1 bg-purple-50 dark:bg-slate-800 rounded"
-                    >
-                      Lap {index + 1}: {formatStopwatchTime(lap)}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Timer Card */}
-          <Card
-            className={cn(
-              "transition-all duration-200 hover:shadow-lg",
-              activeTab === "timer" && "ring-2 ring-pink-500",
-            )}
-          >
-            <CardHeader className="pb-4">
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <Timer className="w-5 h-5 text-pink-600" />
-                Timer
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="text-center">
-                <div className="text-4xl font-mono font-bold text-pink-600 mb-2">{formatTimerTime(timerTime)}</div>
-                {timerRunning && <Badge className="bg-green-500">Running</Badge>}
-                {timerTime === 0 && !timerRunning && timerOriginal > 0 && (
-                  <Badge variant="secondary">Finished! 🎉</Badge>
-                )}
-              </div>
-
-              {!timerRunning && timerTime === 0 && (
-                <div className="space-y-3">
-                  <div className="flex gap-2 justify-center">
-                    {[1, 5, 15, 30].map((min) => (
-                      <Button
-                        key={min}
-                        onClick={() => setQuickTimer(min)}
-                        size="sm"
-                        variant="outline"
-                        className="text-xs"
-                      >
-                        {min}m
-                      </Button>
-                    ))}
-                  </div>
-
-                  <div className="flex gap-2">
-                    <Input
-                      type="number"
-                      placeholder="Min"
-                      value={timerInput.minutes}
-                      onChange={(e) => setTimerInput((prev) => ({ ...prev, minutes: Number(e.target.value) || 0 }))}
-                      className="text-center"
-                      min="0"
-                    />
-                    <Input
-                      type="number"
-                      placeholder="Sec"
-                      value={timerInput.seconds}
-                      onChange={(e) => setTimerInput((prev) => ({ ...prev, seconds: Number(e.target.value) || 0 }))}
-                      className="text-center"
-                      min="0"
-                      max="59"
-                    />
-                  </div>
-                </div>
-              )}
-
-              <div className="flex justify-center gap-2">
-                <Button
-                  onClick={timerRunning ? pauseTimer : startTimer}
-                  size="sm"
-                  className="bg-pink-600 hover:bg-pink-700"
-                  disabled={!timerRunning && timerTime === 0 && timerInput.minutes === 0 && timerInput.seconds === 0}
-                >
-                  {timerRunning ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-                </Button>
-                <Button onClick={resetTimer} size="sm" variant="outline">
-                  <RotateCcw className="w-4 h-4" />
-                </Button>
-              </div>
-
-              {timerOriginal > 0 && (
-                <div className="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-2">
-                  <div
-                    className="bg-pink-600 h-2 rounded-full transition-all duration-1000"
-                    style={{ width: `${((timerOriginal - timerTime) / timerOriginal) * 100}%` }}
-                  />
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Live Clock Card */}
-          <Card
-            className={cn(
-              "transition-all duration-200 hover:shadow-lg",
-              activeTab === "clock" && "ring-2 ring-blue-500",
-            )}
-          >
-            <CardHeader className="pb-4">
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <Clock className="w-5 h-5 text-blue-600" />
-                Live Clock
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="text-center">
-                <div className="text-4xl font-mono font-bold text-blue-600 mb-1">{formatClockTime(currentTime)}</div>
-                <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                  {new Date().toLocaleDateString("en-US", {
-                    weekday: "long",
-                    month: "long",
-                    day: "numeric",
-                    timeZone: selectedTimezone,
-                  })}
-                </div>
-                <Badge variant="secondary" className="text-xs">
-                  {getTimezoneDisplayName(selectedTimezone)}
-                </Badge>
-              </div>
-
-              <div className="space-y-2">
-                <select
-                  value={selectedTimezone}
-                  onChange={(e) => setSelectedTimezone(e.target.value)}
-                  className="w-full p-2 text-xs border rounded-md bg-background"
-                >
-                  <optgroup label="Your Local">
-                    <option value={Intl.DateTimeFormat().resolvedOptions().timeZone}>
-                      {Intl.DateTimeFormat().resolvedOptions().timeZone} (Local)
-                    </option>
-                  </optgroup>
-                  <optgroup label="Common Timezones">
-                    {commonTimezones.map((tz) => (
-                      <option key={tz.value} value={tz.value}>
-                        {tz.label}
-                      </option>
-                    ))}
-                  </optgroup>
-                </select>
-
-                <Button onClick={() => setIs24Hour(!is24Hour)} size="sm" variant="outline" className="w-full text-xs">
-                  {is24Hour ? "Switch to 12H" : "Switch to 24H"}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Countdown Card */}
-          <Card
-            className={cn(
-              "transition-all duration-200 hover:shadow-lg",
-              activeTab === "countdown" && "ring-2 ring-green-500",
-            )}
-          >
-            <CardHeader className="pb-4">
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <Target className="w-5 h-5 text-green-600" />
-                Countdown
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {countdownTarget ? (
+          {/* Stopwatch Tab */}
+          <TabsContent value="stopwatch" className="mt-0">
+            <Card className="w-full max-w-2xl mx-auto">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-center justify-center">
+                  <Timer className="w-6 h-6 text-purple-600" />
+                  Stopwatch
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
                 <div className="text-center">
-                  <div className="text-2xl font-mono font-bold text-green-600 mb-2">
-                    {countdownTime.days > 0 && `${countdownTime.days}d `}
-                    {countdownTime.hours > 0 && `${countdownTime.hours}h `}
-                    {countdownTime.minutes > 0 && `${countdownTime.minutes}m `}
-                    {countdownTime.seconds}s
+                  <div className="text-6xl font-mono font-bold text-purple-600 mb-4">
+                    {formatStopwatchTime(stopwatchTime)}
                   </div>
-                  <div className="text-xs text-gray-600 dark:text-gray-400">
-                    Until {countdownTarget.toLocaleDateString()}
-                  </div>
+                  {stopwatchRunning && <Badge className="bg-green-500 text-white">Running</Badge>}
                 </div>
-              ) : (
-                <div className="space-y-3">
-                  <Input
-                    type="datetime-local"
-                    onChange={(e) => setCountdownTarget(e.target.value)}
-                    className="text-center"
-                  />
-                  <div className="text-xs text-gray-500 text-center">Set your target date & time</div>
-                </div>
-              )}
 
-              {countdownTarget && (
-                <div className="flex justify-center">
-                  <Button onClick={() => setCountdownTargetState(null)} size="sm" variant="outline">
-                    <RotateCcw className="w-4 h-4" />
+                <div className="flex justify-center gap-4">
+                  <Button
+                    onClick={stopwatchRunning ? pauseStopwatch : startStopwatch}
+                    size="lg"
+                    className="bg-purple-600 hover:bg-purple-700 min-w-[44px] h-[44px]"
+                  >
+                    {stopwatchRunning ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
                   </Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Date Difference Card */}
-          <Card
-            className={cn(
-              "transition-all duration-200 hover:shadow-lg",
-              activeTab === "datediff" && "ring-2 ring-orange-500",
-            )}
-          >
-            <CardHeader className="pb-4">
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <Calendar className="w-5 h-5 text-orange-600" />
-                Date Difference
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Input
-                  type="date"
-                  value={dateFrom}
-                  onChange={(e) => setDateFrom(e.target.value)}
-                  placeholder="From date"
-                />
-                <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} placeholder="To date" />
-              </div>
-
-              {dateDiff && (
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-orange-600 mb-1">{dateDiff}</div>
-                  <div className="text-xs text-gray-600 dark:text-gray-400">Difference between dates</div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-
-      {/* Mobile Layout */}
-      <div className="lg:hidden">
-        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as Tool)} className="h-full">
-          <div className="px-4 py-6">
-            <TabsContent value="stopwatch" className="mt-0">
-              <Card className="w-full">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-center justify-center">
-                    <Timer className="w-6 h-6 text-purple-600" />
-                    Stopwatch
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="text-center">
-                    <div className="text-6xl font-mono font-bold text-purple-600 mb-4">
-                      {formatStopwatchTime(stopwatchTime)}
-                    </div>
-                    {stopwatchRunning && <Badge className="bg-green-500 text-white">Running</Badge>}
-                  </div>
-
-                  <div className="flex justify-center gap-4">
+                  {stopwatchRunning && (
                     <Button
-                      onClick={stopwatchRunning ? pauseStopwatch : startStopwatch}
-                      size="lg"
-                      className="bg-purple-600 hover:bg-purple-700 min-w-[44px] h-[44px]"
-                    >
-                      {stopwatchRunning ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
-                    </Button>
-                    {stopwatchRunning && (
-                      <Button
-                        onClick={addLap}
-                        size="lg"
-                        variant="outline"
-                        className="min-w-[44px] h-[44px] bg-transparent"
-                      >
-                        <Zap className="w-5 h-5" />
-                      </Button>
-                    )}
-                    <Button
-                      onClick={resetStopwatch}
+                      onClick={addLap}
                       size="lg"
                       variant="outline"
                       className="min-w-[44px] h-[44px] bg-transparent"
                     >
-                      <RotateCcw className="w-5 h-5" />
+                      <Zap className="w-5 h-5" />
                     </Button>
-                  </div>
+                  )}
+                  <Button
+                    onClick={resetStopwatch}
+                    size="lg"
+                    variant="outline"
+                    className="min-w-[44px] h-[44px] bg-transparent"
+                  >
+                    <RotateCcw className="w-5 h-5" />
+                  </Button>
+                </div>
 
-                  {laps.length > 0 && (
-                    <div className="max-h-48 overflow-y-auto space-y-2">
-                      <h3 className="font-semibold text-center">Laps</h3>
-                      {laps.map((lap, index) => (
-                        <div
-                          key={index}
-                          className="text-lg font-mono text-center py-2 bg-purple-50 dark:bg-slate-800 rounded"
-                        >
-                          Lap {index + 1}: {formatStopwatchTime(lap)}
-                        </div>
+                {laps.length > 0 && (
+                  <div className="max-h-48 overflow-y-auto space-y-2">
+                    <h3 className="font-semibold text-center">Laps</h3>
+                    {laps.map((lap, index) => (
+                      <div
+                        key={index}
+                        className="text-lg font-mono text-center py-2 bg-purple-50 dark:bg-slate-800 rounded"
+                      >
+                        Lap {index + 1}: {formatStopwatchTime(lap)}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Timer Tab */}
+          <TabsContent value="timer" className="mt-0">
+            <Card className="w-full max-w-2xl mx-auto">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-center justify-center">
+                  <Timer className="w-6 h-6 text-pink-600" />
+                  Timer
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="text-center">
+                  <div className="text-6xl font-mono font-bold text-pink-600 mb-4">{formatTimerTime(timerTime)}</div>
+                  {timerRunning && <Badge className="bg-green-500 text-white">Running</Badge>}
+                  {timerTime === 0 && !timerRunning && timerOriginal > 0 && (
+                    <Badge variant="secondary" className="text-lg">
+                      Finished! 🎉
+                    </Badge>
+                  )}
+                </div>
+
+                {!timerRunning && timerTime === 0 && (
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-4 gap-2">
+                      {[1, 5, 15, 30].map((min) => (
+                        <Button key={min} onClick={() => setQuickTimer(min)} variant="outline" className="h-12">
+                          {min}m
+                        </Button>
                       ))}
                     </div>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
 
-            <TabsContent value="timer" className="mt-0">
-              <Card className="w-full">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-center justify-center">
-                    <Timer className="w-6 h-6 text-pink-600" />
-                    Timer
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="text-center">
-                    <div className="text-6xl font-mono font-bold text-pink-600 mb-4">{formatTimerTime(timerTime)}</div>
-                    {timerRunning && <Badge className="bg-green-500 text-white">Running</Badge>}
-                    {timerTime === 0 && !timerRunning && timerOriginal > 0 && (
-                      <Badge variant="secondary" className="text-lg">
-                        Finished! 🎉
-                      </Badge>
-                    )}
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Minutes</label>
+                        <Input
+                          type="number"
+                          value={timerInput.minutes}
+                          onChange={(e) => setTimerInput((prev) => ({ ...prev, minutes: Number(e.target.value) || 0 }))}
+                          className="text-center text-lg h-12"
+                          min="0"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Seconds</label>
+                        <Input
+                          type="number"
+                          value={timerInput.seconds}
+                          onChange={(e) => setTimerInput((prev) => ({ ...prev, seconds: Number(e.target.value) || 0 }))}
+                          className="text-center text-lg h-12"
+                          min="0"
+                          max="59"
+                        />
+                      </div>
+                    </div>
                   </div>
+                )}
 
-                  {!timerRunning && timerTime === 0 && (
-                    <div className="space-y-4">
-                      <div className="grid grid-cols-4 gap-2">
-                        {[1, 5, 15, 30].map((min) => (
-                          <Button key={min} onClick={() => setQuickTimer(min)} variant="outline" className="h-12">
-                            {min}m
-                          </Button>
+                <div className="flex justify-center gap-4">
+                  <Button
+                    onClick={timerRunning ? pauseTimer : startTimer}
+                    size="lg"
+                    className="bg-pink-600 hover:bg-pink-700 min-w-[44px] h-[44px]"
+                    disabled={!timerRunning && timerTime === 0 && timerInput.minutes === 0 && timerInput.seconds === 0}
+                  >
+                    {timerRunning ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
+                  </Button>
+                  <Button
+                    onClick={resetTimer}
+                    size="lg"
+                    variant="outline"
+                    className="min-w-[44px] h-[44px] bg-transparent"
+                  >
+                    <RotateCcw className="w-5 h-5" />
+                  </Button>
+                </div>
+
+                {timerOriginal > 0 && (
+                  <div className="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-3">
+                    <div
+                      className="bg-pink-600 h-3 rounded-full transition-all duration-1000"
+                      style={{ width: `${((timerOriginal - timerTime) / timerOriginal) * 100}%` }}
+                    />
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Clock Tab */}
+          <TabsContent value="clock" className="mt-0">
+            <Card className="w-full max-w-2xl mx-auto">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-center justify-center">
+                  <Clock className="w-6 h-6 text-blue-600" />
+                  Live Clock
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="text-center">
+                  <div className="text-6xl font-mono font-bold text-blue-600 mb-2">{formatClockTime(currentTime)}</div>
+                  <div className="text-xl text-gray-600 dark:text-gray-400 mb-4">
+                    {new Date().toLocaleDateString("en-US", {
+                      weekday: "long",
+                      month: "long",
+                      day: "numeric",
+                      year: "numeric",
+                      timeZone: selectedTimezone,
+                    })}
+                  </div>
+                  <Badge variant="secondary" className="mb-4">
+                    {getTimezoneDisplayName(selectedTimezone)}
+                  </Badge>
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Timezone</label>
+                    <Select value={selectedTimezone} onValueChange={setSelectedTimezone}>
+                      <SelectTrigger className="w-full h-12">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value={Intl.DateTimeFormat().resolvedOptions().timeZone}>
+                          {Intl.DateTimeFormat().resolvedOptions().timeZone} (Local)
+                        </SelectItem>
+                        {commonTimezones.map((tz) => (
+                          <SelectItem key={tz.value} value={tz.value}>
+                            {tz.label}
+                          </SelectItem>
                         ))}
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-2">
-                        <div>
-                          <label className="block text-sm font-medium mb-1">Minutes</label>
-                          <Input
-                            type="number"
-                            value={timerInput.minutes}
-                            onChange={(e) =>
-                              setTimerInput((prev) => ({ ...prev, minutes: Number(e.target.value) || 0 }))
-                            }
-                            className="text-center text-lg h-12"
-                            min="0"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium mb-1">Seconds</label>
-                          <Input
-                            type="number"
-                            value={timerInput.seconds}
-                            onChange={(e) =>
-                              setTimerInput((prev) => ({ ...prev, seconds: Number(e.target.value) || 0 }))
-                            }
-                            className="text-center text-lg h-12"
-                            min="0"
-                            max="59"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="flex justify-center gap-4">
-                    <Button
-                      onClick={timerRunning ? pauseTimer : startTimer}
-                      size="lg"
-                      className="bg-pink-600 hover:bg-pink-700 min-w-[44px] h-[44px]"
-                      disabled={
-                        !timerRunning && timerTime === 0 && timerInput.minutes === 0 && timerInput.seconds === 0
-                      }
-                    >
-                      {timerRunning ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
-                    </Button>
-                    <Button
-                      onClick={resetTimer}
-                      size="lg"
-                      variant="outline"
-                      className="min-w-[44px] h-[44px] bg-transparent"
-                    >
-                      <RotateCcw className="w-5 h-5" />
-                    </Button>
+                      </SelectContent>
+                    </Select>
                   </div>
 
-                  {timerOriginal > 0 && (
-                    <div className="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-3">
-                      <div
-                        className="bg-pink-600 h-3 rounded-full transition-all duration-1000"
-                        style={{ width: `${((timerOriginal - timerTime) / timerOriginal) * 100}%` }}
-                      />
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
+                  <Button onClick={() => setIs24Hour(!is24Hour)} variant="outline" className="w-full h-12 px-8">
+                    Switch to {is24Hour ? "12-hour" : "24-hour"}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-            <TabsContent value="clock" className="mt-0">
-              <Card className="w-full">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-center justify-center">
-                    <Clock className="w-6 h-6 text-blue-600" />
-                    Live Clock
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-6">
+          {/* Countdown Tab */}
+          <TabsContent value="countdown" className="mt-0">
+            <Card className="w-full max-w-2xl mx-auto">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-center justify-center">
+                  <Target className="w-6 h-6 text-green-600" />
+                  Countdown
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {countdownTarget ? (
                   <div className="text-center">
-                    <div className="text-6xl font-mono font-bold text-blue-600 mb-2">
-                      {formatClockTime(currentTime)}
+                    <div className="text-4xl font-mono font-bold text-green-600 mb-4">
+                      {countdownTime.days > 0 && (
+                        <div className="text-2xl">
+                          <span className="text-5xl">{countdownTime.days}</span>
+                          <span className="text-lg ml-1">days</span>
+                        </div>
+                      )}
+                      <div className="flex justify-center gap-4 mt-2">
+                        <div className="text-center">
+                          <div className="text-3xl">{countdownTime.hours.toString().padStart(2, "0")}</div>
+                          <div className="text-xs text-gray-500">hours</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-3xl">{countdownTime.minutes.toString().padStart(2, "0")}</div>
+                          <div className="text-xs text-gray-500">minutes</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-3xl">{countdownTime.seconds.toString().padStart(2, "0")}</div>
+                          <div className="text-xs text-gray-500">seconds</div>
+                        </div>
+                      </div>
                     </div>
-                    <div className="text-xl text-gray-600 dark:text-gray-400 mb-4">
-                      {new Date().toLocaleDateString("en-US", {
+                    <div className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                      Until{" "}
+                      {countdownTarget.toLocaleDateString("en-US", {
                         weekday: "long",
                         month: "long",
                         day: "numeric",
                         year: "numeric",
-                        timeZone: selectedTimezone,
                       })}
                     </div>
-                    <Badge variant="secondary" className="mb-4">
-                      {getTimezoneDisplayName(selectedTimezone)}
-                    </Badge>
                   </div>
-
+                ) : (
                   <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium mb-2">Timezone</label>
-                      <select
-                        value={selectedTimezone}
-                        onChange={(e) => setSelectedTimezone(e.target.value)}
-                        className="w-full p-3 text-base border rounded-md bg-background h-12"
-                      >
-                        <optgroup label="Your Local">
-                          <option value={Intl.DateTimeFormat().resolvedOptions().timeZone}>
-                            {Intl.DateTimeFormat().resolvedOptions().timeZone} (Local)
-                          </option>
-                        </optgroup>
-                        <optgroup label="Common Timezones">
-                          {commonTimezones.map((tz) => (
-                            <option key={tz.value} value={tz.value}>
-                              {tz.label}
-                            </option>
-                          ))}
-                        </optgroup>
-                      </select>
-                    </div>
+                    <div className="text-center text-gray-500 mb-4">Set your target date & time</div>
+                    <Input
+                      type="datetime-local"
+                      onChange={(e) => setCountdownTarget(e.target.value)}
+                      className="text-center h-12 text-lg"
+                    />
+                  </div>
+                )}
 
-                    <Button onClick={() => setIs24Hour(!is24Hour)} variant="outline" className="w-full h-12 px-8">
-                      Switch to {is24Hour ? "12-hour" : "24-hour"}
+                {countdownTarget && (
+                  <div className="flex justify-center">
+                    <Button onClick={() => setCountdownTargetState(null)} variant="outline" className="h-12 px-8">
+                      <RotateCcw className="w-5 h-5 mr-2" />
+                      Reset
                     </Button>
                   </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-            <TabsContent value="countdown" className="mt-0">
-              <Card className="w-full">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-center justify-center">
-                    <Target className="w-6 h-6 text-green-600" />
-                    Countdown
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  {countdownTarget ? (
-                    <div className="text-center">
-                      <div className="text-4xl font-mono font-bold text-green-600 mb-4">
-                        {countdownTime.days > 0 && (
-                          <div className="text-2xl">
-                            <span className="text-5xl">{countdownTime.days}</span>
-                            <span className="text-lg ml-1">days</span>
-                          </div>
-                        )}
-                        <div className="flex justify-center gap-4 mt-2">
-                          <div className="text-center">
-                            <div className="text-3xl">{countdownTime.hours.toString().padStart(2, "0")}</div>
-                            <div className="text-xs text-gray-500">hours</div>
-                          </div>
-                          <div className="text-center">
-                            <div className="text-3xl">{countdownTime.minutes.toString().padStart(2, "0")}</div>
-                            <div className="text-xs text-gray-500">minutes</div>
-                          </div>
-                          <div className="text-center">
-                            <div className="text-3xl">{countdownTime.seconds.toString().padStart(2, "0")}</div>
-                            <div className="text-xs text-gray-500">seconds</div>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                        Until{" "}
-                        {countdownTarget.toLocaleDateString("en-US", {
-                          weekday: "long",
-                          month: "long",
-                          day: "numeric",
-                          year: "numeric",
-                        })}
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      <div className="text-center text-gray-500 mb-4">Set your target date & time</div>
-                      <Input
-                        type="datetime-local"
-                        onChange={(e) => setCountdownTarget(e.target.value)}
-                        className="text-center h-12 text-lg"
-                      />
-                    </div>
-                  )}
+          {/* Date Difference Tab */}
+          <TabsContent value="datediff" className="mt-0">
+            <Card className="w-full max-w-2xl mx-auto">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-center justify-center">
+                  <Calendar className="w-6 h-6 text-orange-600" />
+                  Date Difference
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-2">From Date</label>
+                    <Input
+                      type="date"
+                      value={dateFrom}
+                      onChange={(e) => setDateFrom(e.target.value)}
+                      className="h-12 text-lg"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2">To Date</label>
+                    <Input
+                      type="date"
+                      value={dateTo}
+                      onChange={(e) => setDateTo(e.target.value)}
+                      className="h-12 text-lg"
+                    />
+                  </div>
+                </div>
 
-                  {countdownTarget && (
-                    <div className="flex justify-center">
-                      <Button onClick={() => setCountdownTargetState(null)} variant="outline" className="h-12 px-8">
-                        <RotateCcw className="w-5 h-5 mr-2" />
-                        Reset
-                      </Button>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="datediff" className="mt-0">
-              <Card className="w-full">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-center justify-center">
-                    <Calendar className="w-6 h-6 text-orange-600" />
-                    Date Difference
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium mb-2">From Date</label>
-                      <Input
-                        type="date"
-                        value={dateFrom}
-                        onChange={(e) => setDateFrom(e.target.value)}
-                        className="h-12 text-lg"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-2">To Date</label>
-                      <Input
-                        type="date"
-                        value={dateTo}
-                        onChange={(e) => setDateTo(e.target.value)}
-                        className="h-12 text-lg"
-                      />
+                {dateDiff && (
+                  <div className="text-center">
+                    <div className="text-4xl font-bold text-orange-600 mb-2">{dateDiff}</div>
+                    <div className="text-sm text-gray-600 dark:text-gray-400">
+                      Difference between the selected dates
                     </div>
                   </div>
-
-                  {dateDiff && (
-                    <div className="text-center">
-                      <div className="text-4xl font-bold text-orange-600 mb-2">{dateDiff}</div>
-                      <div className="text-sm text-gray-600 dark:text-gray-400">
-                        Difference between the selected dates
-                      </div>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
 
           {/* Mobile Bottom Navigation */}
-          <div className="fixed bottom-0 left-0 right-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-gray-200 dark:border-slate-700">
+          <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-gray-200 dark:border-slate-700">
             <TabsList className="grid w-full grid-cols-5 h-16 bg-transparent">
               <TabsTrigger
                 value="stopwatch"
