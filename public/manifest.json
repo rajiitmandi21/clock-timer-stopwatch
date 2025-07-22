@@ -1,0 +1,49 @@
+{
+  "name": "ChronoChaos - Ultimate Productivity Timer Suite",
+  "short_name": "ChronoChaos",
+  "description": "Free productivity timer suite with real-time tab updates. Features stopwatch, Pomodoro timer, countdown, world clock, and date calculator.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#8b5cf6",
+  "theme_color": "#8b5cf6",
+  "orientation": "portrait-primary",
+  "categories": ["productivity", "utilities", "lifestyle"],
+  "lang": "en-US",
+  "icons": [
+    {
+      "src": "/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Stopwatch",
+      "short_name": "Stopwatch",
+      "description": "Precision stopwatch with lap tracking",
+      "url": "/#stopwatch",
+      "icons": [{ "src": "/stopwatch-icon.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Pomodoro Timer",
+      "short_name": "Pomodoro",
+      "description": "Focus timer for productivity",
+      "url": "/#pomodoro",
+      "icons": [{ "src": "/pomodoro-icon.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "World Clock",
+      "short_name": "Clock",
+      "description": "Live time with timezone converter",
+      "url": "/#clock",
+      "icons": [{ "src": "/clock-icon.png", "sizes": "96x96" }]
+    }
+  ]
+}

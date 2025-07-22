@@ -9,12 +9,53 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge"
 import { Timer, Clock, Target, Calendar, Play, Pause, RotateCcw, Zap, Moon, Sun } from "lucide-react"
 import { cn } from "@/lib/utils"
+import Head from "next/head"
 
 // Add import for the landing page component
 import { LandingPage } from "@/components/landing-page"
 
 // Tool types
 type Tool = "stopwatch" | "timer" | "clock" | "countdown" | "datediff" | "pomodoro"
+
+// SEO-optimized tool metadata
+const toolMetadata = {
+  stopwatch: {
+    title: "Online Stopwatch with Lap Timer - Precision Time Tracking",
+    description:
+      "Free online stopwatch with millisecond precision and lap tracking. Perfect for sports timing, workouts, and productivity tracking with real-time tab updates.",
+    keywords: "online stopwatch, lap timer, precision timer, sports timer, workout timer, elapsed time tracker",
+  },
+  timer: {
+    title: "Countdown Timer with Visual Progress - Interval Timer Tool",
+    description:
+      "Smart countdown timer with circular progress indicator and auto-restart. Ideal for cooking, workouts, and time management with customizable intervals.",
+    keywords: "countdown timer, interval timer, cooking timer, workout timer, time management, visual timer",
+  },
+  clock: {
+    title: "World Clock - Live Time Display with Timezone Converter",
+    description:
+      "Real-time world clock with timezone converter. Display multiple timezones, copy time to clipboard, and track global time zones effortlessly.",
+    keywords: "world clock, timezone converter, live clock, time zones, global time, current time",
+  },
+  countdown: {
+    title: "Event Countdown Timer - Count Down to Important Dates",
+    description:
+      "Create countdowns to important events and deadlines. Visual countdown display with sound notifications and real-time tab updates.",
+    keywords: "event countdown, countdown timer, deadline tracker, event timer, date countdown",
+  },
+  datediff: {
+    title: "Date Calculator - Calculate Days Between Dates",
+    description:
+      "Calculate the difference between two dates with smart formatting. Perfect for project planning, age calculation, and timeline management.",
+    keywords: "date calculator, days between dates, date difference, time between dates, date math",
+  },
+  pomodoro: {
+    title: "Pomodoro Timer - Focus Timer for Productivity",
+    description:
+      "Boost productivity with the Pomodoro Technique. Customizable focus and break intervals with statistics tracking and notifications.",
+    keywords: "Pomodoro timer, focus timer, productivity timer, study timer, work timer, time management",
+  },
+}
 
 export default function ChronoChaos() {
   // Add landing page state at the top of the component
@@ -196,39 +237,46 @@ export default function ChronoChaos() {
     return "●"
   }
 
-  // Update tab title logic to be more specific and include progress indicators
+  // Enhanced SEO-optimized tab title logic with better keywords
   useEffect(() => {
-    let title = "ChronoChaos"
+    let title = "ChronoChaos - Productivity Timer Suite"
     let favicon = "⚡"
 
     switch (activeTab) {
       case "stopwatch":
         if (stopwatchRunning) {
-          title = `⏱️ ${formatStopwatchTime(stopwatchTime)} - Running`
+          title = `⏱️ ${formatStopwatchTime(stopwatchTime)} - Online Stopwatch Running`
           favicon = "⏱️"
         } else if (stopwatchTime > 0) {
-          title = `⏱️ ${formatStopwatchTime(stopwatchTime)} - Paused`
+          title = `⏱️ ${formatStopwatchTime(stopwatchTime)} - Stopwatch Paused`
           favicon = "⏱️"
         } else {
-          title = `⏱️ Stopwatch`
+          title = `⏱️ Online Stopwatch - Precision Timer with Lap Tracking`
           favicon = "⏱️"
         }
         break
       case "timer":
         if (timerRunning && timerTime > 0) {
-          title = `⏳ ${formatTimerTime(timerTime)} left`
+          title = `⏳ ${formatTimerTime(timerTime)} left - Countdown Timer`
           favicon = "⏳"
         } else if (timerTime === 0 && timerOriginal > 0) {
-          title = `⏳ Timer Complete!`
+          title = `⏳ Timer Complete! - Interval Timer Finished`
           favicon = "✅"
         } else {
-          title = `⏳ Timer`
+          title = `⏳ Countdown Timer - Visual Progress Timer Tool`
           favicon = "⏳"
         }
         break
       case "clock":
-        title = `🕒 ${formatClockTime(currentTime)} - Live Clock`
-        favicon = "🕒"
+        const timeZoneAbbr = new Date()
+          .toLocaleTimeString("en-US", {
+            timeZoneName: "short",
+            timeZone: selectedTimezone,
+          })
+          .split(" ")
+          .pop()
+        title = `🌍 ${formatClockTime(currentTime)} ${timeZoneAbbr} - World Clock`
+        favicon = "🌍"
         break
       case "countdown":
         if (
@@ -239,31 +287,35 @@ export default function ChronoChaos() {
           if (countdownTime.days > 0) parts.push(`${countdownTime.days}d`)
           if (countdownTime.hours > 0) parts.push(`${countdownTime.hours}h`)
           if (countdownTime.minutes > 0) parts.push(`${countdownTime.minutes}m`)
-          title = `🎯 ${parts.join(" ")} left`
+          title = `🎯 ${parts.join(" ")} left - Event Countdown Timer`
           favicon = "🎯"
         } else if (countdownTarget) {
-          title = `🎯 Countdown Complete!`
+          title = `🎯 Event Reached! - Countdown Timer Complete`
           favicon = "✅"
         } else {
-          title = `🎯 Countdown`
+          title = `🎯 Event Countdown Timer - Count Down to Important Dates`
           favicon = "🎯"
         }
         break
       case "datediff":
-        title = `📅 Date Difference`
+        if (dateDiff) {
+          title = `📅 ${dateDiff} - Date Calculator Result`
+        } else {
+          title = `📅 Date Calculator - Calculate Days Between Dates`
+        }
         favicon = "📅"
         break
       case "pomodoro":
         if (pomodoroRunning) {
           const progressIcon = getPomodoroProgressIcon(pomodoroTime, pomodoroOriginal)
           const modeText = pomodoroMode === "focus" ? "Focus" : "Break"
-          title = `${progressIcon} ${modeText} | ${formatPomodoroTime(pomodoroTime)}`
+          title = `🍅 ${formatPomodoroTime(pomodoroTime)} ${modeText} - Pomodoro Timer`
           favicon = pomodoroMode === "focus" ? "🍅" : "☕"
         } else if (pomodoroTime === 0) {
-          title = `● Done! - Pomodoro`
+          title = `🍅 Session Complete! - Pomodoro Timer Done`
           favicon = "✅"
         } else {
-          title = `🍅 Pomodoro`
+          title = `🍅 Pomodoro Timer - Focus Timer for Productivity`
           favicon = "🍅"
         }
         break
@@ -291,7 +343,40 @@ export default function ChronoChaos() {
     pomodoroRunning,
     pomodoroMode,
     pomodoroOriginal,
+    dateDiff,
   ])
+
+  // Add structured data for current tool
+  useEffect(() => {
+    const currentTool = toolMetadata[activeTab]
+    if (currentTool) {
+      // Remove existing structured data
+      const existingScript = document.querySelector("#tool-structured-data")
+      if (existingScript) {
+        existingScript.remove()
+      }
+
+      // Add new structured data
+      const script = document.createElement("script")
+      script.id = "tool-structured-data"
+      script.type = "application/ld+json"
+      script.textContent = JSON.stringify({
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        name: `ChronoChaos ${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}`,
+        description: currentTool.description,
+        url: `https://chronochaos.app/#${activeTab}`,
+        applicationCategory: "ProductivityApplication",
+        keywords: currentTool.keywords,
+        isPartOf: {
+          "@type": "WebApplication",
+          name: "ChronoChaos",
+          url: "https://chronochaos.app",
+        },
+      })
+      document.head.appendChild(script)
+    }
+  }, [activeTab])
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -693,639 +778,864 @@ export default function ChronoChaos() {
   }
 
   return (
-    <div
-      className={cn(
-        "min-h-screen transition-colors duration-200",
-        darkMode
-          ? "bg-gradient-to-br from-slate-900 to-slate-800 text-white"
-          : "bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 text-slate-900",
-      )}
-    >
-      {/* Header */}
-      <div className="sticky top-0 z-50 backdrop-blur-md bg-white/80 dark:bg-slate-900/80 border-b border-purple-200 dark:border-slate-700">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="text-2xl">⚡</div>
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-              ChronoChaos
-            </h1>
+    <>
+      <Head>
+        <title>{toolMetadata[activeTab]?.title || "ChronoChaos - Productivity Timer Suite"}</title>
+        <meta
+          name="description"
+          content={
+            toolMetadata[activeTab]?.description || "Ultimate productivity timer suite with real-time tab updates"
+          }
+        />
+        <meta
+          name="keywords"
+          content={toolMetadata[activeTab]?.keywords || "productivity timer, time tracking, stopwatch, Pomodoro"}
+        />
+      </Head>
+
+      <div
+        className={cn(
+          "min-h-screen transition-colors duration-200",
+          darkMode
+            ? "bg-gradient-to-br from-slate-900 to-slate-800 text-white"
+            : "bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 text-slate-900",
+        )}
+      >
+        {/* Header */}
+        <header className="sticky top-0 z-50 backdrop-blur-md bg-white/80 dark:bg-slate-900/80 border-b border-purple-200 dark:border-slate-700">
+          <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="text-2xl" role="img" aria-label="Lightning bolt icon">
+                ⚡
+              </div>
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                ChronoChaos
+              </h1>
+            </div>
+
+            <nav className="flex items-center gap-2" role="navigation" aria-label="Main navigation">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowLandingPage(true)}
+                className="text-xs"
+                aria-label="View application information"
+              >
+                About
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setDarkMode(!darkMode)}
+                className="rounded-full"
+                aria-label={`Switch to ${darkMode ? "light" : "dark"} mode`}
+              >
+                {darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+              </Button>
+            </nav>
           </div>
+        </header>
 
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" onClick={() => setShowLandingPage(true)} className="text-xs">
-              About
-            </Button>
-            <Button variant="ghost" size="sm" onClick={() => setDarkMode(!darkMode)} className="rounded-full">
-              {darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-            </Button>
-          </div>
-        </div>
-      </div>
-
-      {/* Main Content */}
-      <div className="max-w-4xl mx-auto p-4">
-        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as Tool)} className="w-full">
-          {/* Desktop Tab Navigation */}
-          <TabsList className="hidden lg:grid w-full grid-cols-6 mb-8">
-            <TabsTrigger value="stopwatch" className="flex items-center gap-2">
-              <Timer className="w-4 h-4" />
-              Stopwatch
-            </TabsTrigger>
-            <TabsTrigger value="timer" className="flex items-center gap-2">
-              <Timer className="w-4 h-4" />
-              Timer
-            </TabsTrigger>
-            <TabsTrigger value="clock" className="flex items-center gap-2">
-              <Clock className="w-4 h-4" />
-              Clock
-            </TabsTrigger>
-            <TabsTrigger value="countdown" className="flex items-center gap-2">
-              <Target className="w-4 h-4" />
-              Countdown
-            </TabsTrigger>
-            <TabsTrigger value="datediff" className="flex items-center gap-2">
-              <Calendar className="w-4 h-4" />
-              Date Diff
-            </TabsTrigger>
-            <TabsTrigger value="pomodoro" className="flex items-center gap-2">
-              <div className="text-sm">🍅</div>
-              Pomodoro
-            </TabsTrigger>
-          </TabsList>
-
-          {/* Stopwatch Tab */}
-          <TabsContent value="stopwatch" className="mt-0">
-            <Card className="w-full max-w-2xl mx-auto">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-center justify-center">
-                  <Timer className="w-6 h-6 text-purple-600" />
-                  Stopwatch
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="text-center">
-                  <div className="text-6xl font-mono font-bold text-purple-600 mb-4">
-                    {formatStopwatchTime(stopwatchTime)}
-                  </div>
-                  {stopwatchRunning && <Badge className="bg-green-500 text-white">Running</Badge>}
+        {/* Main Content */}
+        <main className="max-w-4xl mx-auto p-4" role="main">
+          <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as Tool)} className="w-full">
+            {/* Desktop Tab Navigation */}
+            <TabsList className="hidden lg:grid w-full grid-cols-6 mb-8" role="tablist" aria-label="Productivity tools">
+              <TabsTrigger
+                value="stopwatch"
+                className="flex items-center gap-2"
+                role="tab"
+                aria-controls="stopwatch-panel"
+              >
+                <Timer className="w-4 h-4" aria-hidden="true" />
+                Precision Stopwatch
+              </TabsTrigger>
+              <TabsTrigger value="timer" className="flex items-center gap-2" role="tab" aria-controls="timer-panel">
+                <Timer className="w-4 h-4" aria-hidden="true" />
+                Countdown Timer
+              </TabsTrigger>
+              <TabsTrigger value="clock" className="flex items-center gap-2" role="tab" aria-controls="clock-panel">
+                <Clock className="w-4 h-4" aria-hidden="true" />
+                World Clock
+              </TabsTrigger>
+              <TabsTrigger
+                value="countdown"
+                className="flex items-center gap-2"
+                role="tab"
+                aria-controls="countdown-panel"
+              >
+                <Target className="w-4 h-4" aria-hidden="true" />
+                Event Countdown
+              </TabsTrigger>
+              <TabsTrigger
+                value="datediff"
+                className="flex items-center gap-2"
+                role="tab"
+                aria-controls="datediff-panel"
+              >
+                <Calendar className="w-4 h-4" aria-hidden="true" />
+                Date Calculator
+              </TabsTrigger>
+              <TabsTrigger
+                value="pomodoro"
+                className="flex items-center gap-2"
+                role="tab"
+                aria-controls="pomodoro-panel"
+              >
+                <div className="text-sm" aria-hidden="true">
+                  🍅
                 </div>
+                Pomodoro Focus
+              </TabsTrigger>
+            </TabsList>
 
-                <div className="flex justify-center gap-4">
-                  <Button
-                    onClick={stopwatchRunning ? pauseStopwatch : startStopwatch}
-                    size="lg"
-                    className="bg-purple-600 hover:bg-purple-700 min-w-[44px] h-[44px]"
-                  >
-                    {stopwatchRunning ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
-                  </Button>
-                  {stopwatchRunning && (
+            {/* Stopwatch Tab */}
+            <TabsContent
+              value="stopwatch"
+              className="mt-0"
+              role="tabpanel"
+              id="stopwatch-panel"
+              aria-labelledby="stopwatch-tab"
+            >
+              <Card className="w-full max-w-2xl mx-auto">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-center justify-center">
+                    <Timer className="w-6 h-6 text-purple-600" aria-hidden="true" />
+                    Precision Stopwatch with Lap Timer
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="text-center">
+                    <div
+                      className="text-6xl font-mono font-bold text-purple-600 mb-4"
+                      aria-live="polite"
+                      aria-label={`Elapsed time: ${formatStopwatchTime(stopwatchTime)}`}
+                    >
+                      {formatStopwatchTime(stopwatchTime)}
+                    </div>
+                    {stopwatchRunning && (
+                      <Badge className="bg-green-500 text-white" aria-label="Stopwatch is currently running">
+                        Running
+                      </Badge>
+                    )}
+                  </div>
+
+                  <div className="flex justify-center gap-4" role="group" aria-label="Stopwatch controls">
                     <Button
-                      onClick={addLap}
+                      onClick={stopwatchRunning ? pauseStopwatch : startStopwatch}
+                      size="lg"
+                      className="bg-purple-600 hover:bg-purple-700 min-w-[44px] h-[44px]"
+                      aria-label={stopwatchRunning ? "Pause stopwatch" : "Start stopwatch"}
+                    >
+                      {stopwatchRunning ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
+                    </Button>
+                    {stopwatchRunning && (
+                      <Button
+                        onClick={addLap}
+                        size="lg"
+                        variant="outline"
+                        className="min-w-[44px] h-[44px] bg-transparent"
+                        aria-label="Record lap time"
+                      >
+                        <Zap className="w-5 h-5" />
+                      </Button>
+                    )}
+                    <Button
+                      onClick={resetStopwatch}
                       size="lg"
                       variant="outline"
                       className="min-w-[44px] h-[44px] bg-transparent"
+                      aria-label="Reset stopwatch to zero"
                     >
-                      <Zap className="w-5 h-5" />
+                      <RotateCcw className="w-5 h-5" />
                     </Button>
-                  )}
-                  <Button
-                    onClick={resetStopwatch}
-                    size="lg"
-                    variant="outline"
-                    className="min-w-[44px] h-[44px] bg-transparent"
-                  >
-                    <RotateCcw className="w-5 h-5" />
-                  </Button>
-                  <Button
-                    onClick={exportLaps}
-                    size="lg"
-                    variant="outline"
-                    className="min-w-[44px] h-[44px] bg-transparent"
-                  >
-                    Export
-                  </Button>
-                </div>
-
-                {laps.length > 0 && (
-                  <div className="max-h-48 overflow-y-auto space-y-2">
-                    <h3 className="font-semibold text-center">Laps</h3>
-                    {laps.map((lap, index) => (
-                      <div
-                        key={index}
-                        className="text-lg font-mono text-center py-2 bg-purple-50 dark:bg-slate-800 rounded"
-                      >
-                        Lap {index + 1}: {formatStopwatchTime(lap)}
-                      </div>
-                    ))}
+                    <Button
+                      onClick={exportLaps}
+                      size="lg"
+                      variant="outline"
+                      className="min-w-[44px] h-[44px] bg-transparent"
+                      aria-label="Export lap times to clipboard"
+                      disabled={laps.length === 0}
+                    >
+                      Export
+                    </Button>
                   </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
 
-          {/* Timer Tab */}
-          <TabsContent value="timer" className="mt-0">
-            <Card className="w-full max-w-2xl mx-auto">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-center justify-center">
-                  <Timer className="w-6 h-6 text-pink-600" />
-                  Timer
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="text-center">
-                  <div className="relative inline-block">
-                    <CircularProgress progress={timerOriginal > 0 ? (timerOriginal - timerTime) / timerOriginal : 0} />
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
-                      <div className="text-4xl font-mono font-bold text-pink-600 mb-4">
-                        {formatTimerTime(timerTime)}
-                      </div>
-                    </div>
-                  </div>
-                  {timerRunning && <Badge className="bg-green-500 text-white">Running</Badge>}
-                  {timerTime === 0 && !timerRunning && timerOriginal > 0 && (
-                    <Badge variant="secondary" className="text-lg">
-                      Finished! 🎉
-                    </Badge>
-                  )}
-                </div>
-
-                {!timerRunning && timerTime === 0 && (
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-4 gap-2">
-                      {[1, 5, 15, 30].map((min) => (
-                        <Button key={min} onClick={() => setQuickTimer(min)} variant="outline" className="h-12">
-                          {min}m
-                        </Button>
+                  {laps.length > 0 && (
+                    <div className="max-h-48 overflow-y-auto space-y-2" role="region" aria-label="Lap times">
+                      <h3 className="font-semibold text-center">Lap Times</h3>
+                      {laps.map((lap, index) => (
+                        <div
+                          key={index}
+                          className="text-lg font-mono text-center py-2 bg-purple-50 dark:bg-slate-800 rounded"
+                        >
+                          Lap {index + 1}: {formatStopwatchTime(lap)}
+                        </div>
                       ))}
                     </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
 
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <label className="block text-sm font-medium mb-1">Minutes</label>
-                        <Input
-                          type="number"
-                          value={timerInput.minutes}
-                          onChange={(e) => setTimerInput((prev) => ({ ...prev, minutes: Number(e.target.value) || 0 }))}
-                          className="text-center text-lg h-12"
-                          min="0"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium mb-1">Seconds</label>
-                        <Input
-                          type="number"
-                          value={timerInput.seconds}
-                          onChange={(e) => setTimerInput((prev) => ({ ...prev, seconds: Number(e.target.value) || 0 }))}
-                          className="text-center text-lg h-12"
-                          min="0"
-                          max="59"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                <div className="flex justify-between items-center mb-4">
-                  <label htmlFor="autoRestart" className="text-sm font-medium">
-                    Auto-Restart
-                  </label>
-                  <input
-                    type="checkbox"
-                    id="autoRestart"
-                    checked={autoRestart}
-                    onChange={(e) => setAutoRestart(e.target.checked)}
-                    className="h-5 w-5 rounded accent-pink-500"
-                  />
-                </div>
-
-                <div className="flex justify-center gap-4">
-                  <Button
-                    onClick={timerRunning ? pauseTimer : startTimer}
-                    size="lg"
-                    className="bg-pink-600 hover:bg-pink-700 min-w-[44px] h-[44px]"
-                    disabled={!timerRunning && timerTime === 0 && timerInput.minutes === 0 && timerInput.seconds === 0}
-                  >
-                    {timerRunning ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
-                  </Button>
-                  <Button
-                    onClick={resetTimer}
-                    size="lg"
-                    variant="outline"
-                    className="min-w-[44px] h-[44px] bg-transparent"
-                  >
-                    <RotateCcw className="w-5 h-5" />
-                  </Button>
-                </div>
-
-                {timerOriginal > 0 && (
-                  <div className="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-3">
-                    <div
-                      className="bg-pink-600 h-3 rounded-full transition-all duration-1000"
-                      style={{ width: `${((timerOriginal - timerTime) / timerOriginal) * 100}%` }}
-                    />
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Clock Tab */}
-          <TabsContent value="clock" className="mt-0">
-            <Card className="w-full max-w-2xl mx-auto">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-center justify-center">
-                  <Clock className="w-6 h-6 text-blue-600" />
-                  Live Clock
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="text-center">
-                  <div
-                    className="text-6xl font-mono font-bold text-blue-600 mb-2 cursor-pointer"
-                    onClick={copyTimeToClipboard}
-                  >
-                    {formatClockTime(currentTime)}
-                  </div>
-                  <div className="text-xl text-gray-600 dark:text-gray-400 mb-4">
-                    {new Date().toLocaleDateString("en-US", {
-                      weekday: "long",
-                      month: "long",
-                      day: "numeric",
-                      year: "numeric",
-                      timeZone: selectedTimezone,
-                    })}
-                  </div>
-                  <Badge variant="secondary" className="mb-4">
-                    {getTimezoneDisplayName(selectedTimezone)}
-                  </Badge>
-                </div>
-
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Timezone</label>
-                    <Select value={selectedTimezone} onValueChange={setSelectedTimezone}>
-                      <SelectTrigger className="w-full h-12">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value={Intl.DateTimeFormat().resolvedOptions().timeZone}>
-                          {Intl.DateTimeFormat().resolvedOptions().timeZone} (Local)
-                        </SelectItem>
-                        {commonTimezones.map((tz) => (
-                          <SelectItem key={tz.value} value={tz.value}>
-                            {tz.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <Button onClick={() => setIs24Hour(!is24Hour)} variant="outline" className="w-full h-12 px-8">
-                    Switch to {is24Hour ? "12-hour" : "24-hour"}
-                  </Button>
-                  <Button onClick={() => setAnalogClock(!analogClock)} variant="outline" className="w-full h-12 px-8">
-                    Show {analogClock ? "Digital" : "Analog"} Clock
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Countdown Tab */}
-          <TabsContent value="countdown" className="mt-0">
-            <Card className="w-full max-w-2xl mx-auto">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-center justify-center">
-                  <Target className="w-6 h-6 text-green-600" />
-                  Countdown
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {countdownTarget ? (
+            {/* Timer Tab */}
+            <TabsContent value="timer" className="mt-0" role="tabpanel" id="timer-panel" aria-labelledby="timer-tab">
+              <Card className="w-full max-w-2xl mx-auto">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-center justify-center">
+                    <Timer className="w-6 h-6 text-pink-600" aria-hidden="true" />
+                    Countdown Timer with Visual Progress
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
                   <div className="text-center">
-                    <div className="text-4xl font-mono font-bold text-green-600 mb-4">
-                      {countdownTime.days > 0 && (
-                        <div className="text-2xl">
-                          <span className="text-5xl">{countdownTime.days}</span>
-                          <span className="text-lg ml-1">days</span>
-                        </div>
-                      )}
-                      <div className="flex justify-center gap-4 mt-2">
-                        <div className="text-center">
-                          <div className="text-3xl">{countdownTime.hours.toString().padStart(2, "0")}</div>
-                          <div className="text-xs text-gray-500">hours</div>
-                        </div>
-                        <div className="text-center">
-                          <div className="text-3xl">{countdownTime.minutes.toString().padStart(2, "0")}</div>
-                          <div className="text-xs text-gray-500">minutes</div>
-                        </div>
-                        <div className="text-center">
-                          <div className="text-3xl">{countdownTime.seconds.toString().padStart(2, "0")}</div>
-                          <div className="text-xs text-gray-500">seconds</div>
+                    <div className="relative inline-block">
+                      <CircularProgress
+                        progress={timerOriginal > 0 ? (timerOriginal - timerTime) / timerOriginal : 0}
+                        aria-label={`Timer progress: ${timerOriginal > 0 ? Math.round(((timerOriginal - timerTime) / timerOriginal) * 100) : 0}% complete`}
+                      />
+                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+                        <div
+                          className="text-4xl font-mono font-bold text-pink-600 mb-4"
+                          aria-live="polite"
+                          aria-label={`Time remaining: ${formatTimerTime(timerTime)}`}
+                        >
+                          {formatTimerTime(timerTime)}
                         </div>
                       </div>
                     </div>
-                    <div className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                      Until{" "}
-                      {countdownTarget.toLocaleDateString("en-US", {
+                    {timerRunning && (
+                      <Badge className="bg-green-500 text-white" aria-label="Timer is currently running">
+                        Running
+                      </Badge>
+                    )}
+                    {timerTime === 0 && !timerRunning && timerOriginal > 0 && (
+                      <Badge variant="secondary" className="text-lg" aria-label="Timer has finished">
+                        Finished! 🎉
+                      </Badge>
+                    )}
+                  </div>
+
+                  {!timerRunning && timerTime === 0 && (
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-4 gap-2" role="group" aria-label="Quick timer presets">
+                        {[1, 5, 15, 30].map((min) => (
+                          <Button
+                            key={min}
+                            onClick={() => setQuickTimer(min)}
+                            variant="outline"
+                            className="h-12"
+                            aria-label={`Set timer for ${min} minutes`}
+                          >
+                            {min}m
+                          </Button>
+                        ))}
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label htmlFor="timer-minutes" className="block text-sm font-medium mb-1">
+                            Minutes
+                          </label>
+                          <Input
+                            id="timer-minutes"
+                            type="number"
+                            value={timerInput.minutes}
+                            onChange={(e) =>
+                              setTimerInput((prev) => ({ ...prev, minutes: Number(e.target.value) || 0 }))
+                            }
+                            className="text-center text-lg h-12"
+                            min="0"
+                            aria-label="Timer minutes"
+                          />
+                        </div>
+                        <div>
+                          <label htmlFor="timer-seconds" className="block text-sm font-medium mb-1">
+                            Seconds
+                          </label>
+                          <Input
+                            id="timer-seconds"
+                            type="number"
+                            value={timerInput.seconds}
+                            onChange={(e) =>
+                              setTimerInput((prev) => ({ ...prev, seconds: Number(e.target.value) || 0 }))
+                            }
+                            className="text-center text-lg h-12"
+                            min="0"
+                            max="59"
+                            aria-label="Timer seconds"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex justify-between items-center mb-4">
+                    <label htmlFor="autoRestart" className="text-sm font-medium">
+                      Auto-Restart Timer
+                    </label>
+                    <input
+                      type="checkbox"
+                      id="autoRestart"
+                      checked={autoRestart}
+                      onChange={(e) => setAutoRestart(e.target.checked)}
+                      className="h-5 w-5 rounded accent-pink-500"
+                      aria-describedby="autoRestart-desc"
+                    />
+                    <span id="autoRestart-desc" className="sr-only">
+                      Automatically restart the timer when it reaches zero
+                    </span>
+                  </div>
+
+                  <div className="flex justify-center gap-4" role="group" aria-label="Timer controls">
+                    <Button
+                      onClick={timerRunning ? pauseTimer : startTimer}
+                      size="lg"
+                      className="bg-pink-600 hover:bg-pink-700 min-w-[44px] h-[44px]"
+                      disabled={
+                        !timerRunning && timerTime === 0 && timerInput.minutes === 0 && timerInput.seconds === 0
+                      }
+                      aria-label={timerRunning ? "Pause timer" : "Start timer"}
+                    >
+                      {timerRunning ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
+                    </Button>
+                    <Button
+                      onClick={resetTimer}
+                      size="lg"
+                      variant="outline"
+                      className="min-w-[44px] h-[44px] bg-transparent"
+                      aria-label="Reset timer to zero"
+                    >
+                      <RotateCcw className="w-5 h-5" />
+                    </Button>
+                  </div>
+
+                  {timerOriginal > 0 && (
+                    <div
+                      className="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-3"
+                      role="progressbar"
+                      aria-valuenow={((timerOriginal - timerTime) / timerOriginal) * 100}
+                      aria-valuemin={0}
+                      aria-valuemax={100}
+                    >
+                      <div
+                        className="bg-pink-600 h-3 rounded-full transition-all duration-1000"
+                        style={{ width: `${((timerOriginal - timerTime) / timerOriginal) * 100}%` }}
+                      />
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Clock Tab */}
+            <TabsContent value="clock" className="mt-0" role="tabpanel" id="clock-panel" aria-labelledby="clock-tab">
+              <Card className="w-full max-w-2xl mx-auto">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-center justify-center">
+                    <Clock className="w-6 h-6 text-blue-600" aria-hidden="true" />
+                    World Clock with Timezone Converter
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="text-center">
+                    <div
+                      className="text-6xl font-mono font-bold text-blue-600 mb-2 cursor-pointer hover:text-blue-700 transition-colors"
+                      onClick={copyTimeToClipboard}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => e.key === "Enter" && copyTimeToClipboard()}
+                      aria-label={`Current time: ${formatClockTime(currentTime)}. Click to copy to clipboard.`}
+                      title="Click to copy time to clipboard"
+                    >
+                      {formatClockTime(currentTime)}
+                    </div>
+                    <div className="text-xl text-gray-600 dark:text-gray-400 mb-4">
+                      {new Date().toLocaleDateString("en-US", {
                         weekday: "long",
                         month: "long",
                         day: "numeric",
                         year: "numeric",
+                        timeZone: selectedTimezone,
                       })}
                     </div>
+                    <Badge variant="secondary" className="mb-4">
+                      {getTimezoneDisplayName(selectedTimezone)}
+                    </Badge>
                   </div>
-                ) : (
-                  <div className="space-y-4">
-                    <div className="text-center text-gray-500 mb-4">Set your target date & time</div>
-                    <Input
-                      type="datetime-local"
-                      onChange={(e) => setCountdownTarget(e.target.value)}
-                      className="text-center h-12 text-lg"
-                    />
-                  </div>
-                )}
 
-                {countdownTarget && (
-                  <div className="flex justify-center">
-                    <Button onClick={() => setCountdownTargetState(null)} variant="outline" className="h-12 px-8">
-                      <RotateCcw className="w-5 h-5 mr-2" />
-                      Reset
+                  <div className="space-y-4">
+                    <div>
+                      <label htmlFor="timezone-select" className="block text-sm font-medium mb-2">
+                        Select Timezone
+                      </label>
+                      <Select value={selectedTimezone} onValueChange={setSelectedTimezone}>
+                        <SelectTrigger className="w-full h-12" id="timezone-select" aria-label="Select timezone">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value={Intl.DateTimeFormat().resolvedOptions().timeZone}>
+                            {Intl.DateTimeFormat().resolvedOptions().timeZone} (Local)
+                          </SelectItem>
+                          {commonTimezones.map((tz) => (
+                            <SelectItem key={tz.value} value={tz.value}>
+                              {tz.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <Button
+                      onClick={() => setIs24Hour(!is24Hour)}
+                      variant="outline"
+                      className="w-full h-12 px-8"
+                      aria-label={`Switch to ${is24Hour ? "12-hour" : "24-hour"} time format`}
+                    >
+                      Switch to {is24Hour ? "12-hour" : "24-hour"} Format
+                    </Button>
+                    <Button
+                      onClick={() => setAnalogClock(!analogClock)}
+                      variant="outline"
+                      className="w-full h-12 px-8"
+                      aria-label={`Show ${analogClock ? "digital" : "analog"} clock display`}
+                    >
+                      Show {analogClock ? "Digital" : "Analog"} Clock
                     </Button>
                   </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
+                </CardContent>
+              </Card>
+            </TabsContent>
 
-          {/* Date Difference Tab */}
-          <TabsContent value="datediff" className="mt-0">
-            <Card className="w-full max-w-2xl mx-auto">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-center justify-center">
-                  <Calendar className="w-6 h-6 text-orange-600" />
-                  Date Difference
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-2">From Date</label>
-                    <Input
-                      type="date"
-                      value={dateFrom}
-                      onChange={(e) => setDateFrom(e.target.value)}
-                      className="h-12 text-lg"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-2">To Date</label>
-                    <Input
-                      type="date"
-                      value={dateTo}
-                      onChange={(e) => setDateTo(e.target.value)}
-                      className="h-12 text-lg"
-                    />
-                  </div>
-                </div>
+            {/* Countdown Tab */}
+            <TabsContent
+              value="countdown"
+              className="mt-0"
+              role="tabpanel"
+              id="countdown-panel"
+              aria-labelledby="countdown-tab"
+            >
+              <Card className="w-full max-w-2xl mx-auto">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-center justify-center">
+                    <Target className="w-6 h-6 text-green-600" aria-hidden="true" />
+                    Event Countdown Timer
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {countdownTarget ? (
+                    <div className="text-center">
+                      <div
+                        className="text-4xl font-mono font-bold text-green-600 mb-4"
+                        aria-live="polite"
+                        aria-label={`Time remaining: ${countdownTime.days} days, ${countdownTime.hours} hours, ${countdownTime.minutes} minutes, ${countdownTime.seconds} seconds`}
+                      >
+                        {countdownTime.days > 0 && (
+                          <div className="text-2xl">
+                            <span className="text-5xl">{countdownTime.days}</span>
+                            <span className="text-lg ml-1">days</span>
+                          </div>
+                        )}
+                        <div className="flex justify-center gap-4 mt-2">
+                          <div className="text-center">
+                            <div className="text-3xl">{countdownTime.hours.toString().padStart(2, "0")}</div>
+                            <div className="text-xs text-gray-500">hours</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-3xl">{countdownTime.minutes.toString().padStart(2, "0")}</div>
+                            <div className="text-xs text-gray-500">minutes</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-3xl">{countdownTime.seconds.toString().padStart(2, "0")}</div>
+                            <div className="text-xs text-gray-500">seconds</div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                        Until{" "}
+                        {countdownTarget.toLocaleDateString("en-US", {
+                          weekday: "long",
+                          month: "long",
+                          day: "numeric",
+                          year: "numeric",
+                        })}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <div className="text-center text-gray-500 mb-4">Set your target event date & time</div>
+                      <Input
+                        type="datetime-local"
+                        onChange={(e) => setCountdownTarget(e.target.value)}
+                        className="text-center h-12 text-lg"
+                        aria-label="Select target date and time for countdown"
+                      />
+                    </div>
+                  )}
 
-                {dateDiff && (
-                  <div className="text-center">
-                    <div className="text-4xl font-bold text-orange-600 mb-2">{dateDiff}</div>
-                    <div className="text-sm text-gray-600 dark:text-gray-400">
-                      Difference between the selected dates
+                  {countdownTarget && (
+                    <div className="flex justify-center">
+                      <Button
+                        onClick={() => setCountdownTargetState(null)}
+                        variant="outline"
+                        className="h-12 px-8"
+                        aria-label="Reset countdown timer"
+                      >
+                        <RotateCcw className="w-5 h-5 mr-2" />
+                        Reset Countdown
+                      </Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Date Difference Tab */}
+            <TabsContent
+              value="datediff"
+              className="mt-0"
+              role="tabpanel"
+              id="datediff-panel"
+              aria-labelledby="datediff-tab"
+            >
+              <Card className="w-full max-w-2xl mx-auto">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-center justify-center">
+                    <Calendar className="w-6 h-6 text-orange-600" aria-hidden="true" />
+                    Date Calculator - Days Between Dates
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="space-y-4">
+                    <div>
+                      <label htmlFor="date-from" className="block text-sm font-medium mb-2">
+                        From Date
+                      </label>
+                      <Input
+                        id="date-from"
+                        type="date"
+                        value={dateFrom}
+                        onChange={(e) => setDateFrom(e.target.value)}
+                        className="h-12 text-lg"
+                        aria-label="Select start date for calculation"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="date-to" className="block text-sm font-medium mb-2">
+                        To Date
+                      </label>
+                      <Input
+                        id="date-to"
+                        type="date"
+                        value={dateTo}
+                        onChange={(e) => setDateTo(e.target.value)}
+                        className="h-12 text-lg"
+                        aria-label="Select end date for calculation"
+                      />
                     </div>
                   </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
 
-          {/* Pomodoro Tab */}
-          <TabsContent value="pomodoro" className="mt-0">
-            <Card className="w-full max-w-2xl mx-auto">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-center justify-center">
-                  <div className="text-xl">🍅</div>
-                  Pomodoro Timer
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="text-center">
-                  <div className="text-6xl font-mono font-bold text-red-600 mb-2">
-                    {formatPomodoroTime(pomodoroTime)}
-                  </div>
-                  <div className="flex items-center justify-center gap-2 mb-4">
-                    <Badge className={cn("text-white", pomodoroMode === "focus" ? "bg-red-600" : "bg-green-600")}>
-                      {pomodoroMode === "focus" ? "🍅 Focus" : "☕ Break"} Session {pomodoroSession}
-                    </Badge>
-                    {pomodoroRunning && <Badge className="bg-blue-500 text-white">Running</Badge>}
-                    {pomodoroTime === 0 && !pomodoroRunning && (
-                      <Badge variant="secondary" className="text-lg">
-                        Session Complete! 🎉
+                  {dateDiff && (
+                    <div className="text-center">
+                      <div className="text-4xl font-bold text-orange-600 mb-2" aria-live="polite">
+                        {dateDiff}
+                      </div>
+                      <div className="text-sm text-gray-600 dark:text-gray-400">
+                        Difference between the selected dates
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Pomodoro Tab */}
+            <TabsContent
+              value="pomodoro"
+              className="mt-0"
+              role="tabpanel"
+              id="pomodoro-panel"
+              aria-labelledby="pomodoro-tab"
+            >
+              <Card className="w-full max-w-2xl mx-auto">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-center justify-center">
+                    <div className="text-xl" aria-hidden="true">
+                      🍅
+                    </div>
+                    Pomodoro Focus Timer for Productivity
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="text-center">
+                    <div
+                      className="text-6xl font-mono font-bold text-red-600 mb-2"
+                      aria-live="polite"
+                      aria-label={`${pomodoroMode === "focus" ? "Focus" : "Break"} session: ${formatPomodoroTime(pomodoroTime)} remaining`}
+                    >
+                      {formatPomodoroTime(pomodoroTime)}
+                    </div>
+                    <div className="flex items-center justify-center gap-2 mb-4">
+                      <Badge className={cn("text-white", pomodoroMode === "focus" ? "bg-red-600" : "bg-green-600")}>
+                        {pomodoroMode === "focus" ? "🍅 Focus" : "☕ Break"} Session {pomodoroSession}
                       </Badge>
+                      {pomodoroRunning && (
+                        <Badge className="bg-blue-500 text-white" aria-label="Pomodoro timer is running">
+                          Running
+                        </Badge>
+                      )}
+                      {pomodoroTime === 0 && !pomodoroRunning && (
+                        <Badge variant="secondary" className="text-lg" aria-label="Pomodoro session complete">
+                          Session Complete! 🎉
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+
+                  {!pomodoroRunning && pomodoroTime > 0 && (
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label htmlFor="focus-duration" className="block text-sm font-medium mb-2">
+                            Focus Duration (minutes)
+                          </label>
+                          <Input
+                            id="focus-duration"
+                            type="number"
+                            value={pomodoroSettings.focusDuration}
+                            onChange={(e) => {
+                              const value = Number(e.target.value) || 25
+                              setPomodoroSettings((prev) => ({ ...prev, focusDuration: value }))
+                              if (pomodoroMode === "focus") {
+                                const newTime = value * 60
+                                setPomodoroTime(newTime)
+                                setPomodoroOriginal(newTime)
+                              }
+                            }}
+                            className="text-center h-12"
+                            min="1"
+                            max="60"
+                            aria-label="Set focus session duration in minutes"
+                          />
+                        </div>
+                        <div>
+                          <label htmlFor="break-duration" className="block text-sm font-medium mb-2">
+                            Break Duration (minutes)
+                          </label>
+                          <Input
+                            id="break-duration"
+                            type="number"
+                            value={pomodoroSettings.breakDuration}
+                            onChange={(e) => {
+                              const value = Number(e.target.value) || 5
+                              setPomodoroSettings((prev) => ({ ...prev, breakDuration: value }))
+                              if (pomodoroMode === "break") {
+                                const newTime = value * 60
+                                setPomodoroTime(newTime)
+                                setPomodoroOriginal(newTime)
+                              }
+                            }}
+                            className="text-center h-12"
+                            min="1"
+                            max="30"
+                            aria-label="Set break session duration in minutes"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <label className="text-sm font-medium">Sound Notifications</label>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() =>
+                              setPomodoroSettings((prev) => ({ ...prev, soundEnabled: !prev.soundEnabled }))
+                            }
+                            aria-label={`${pomodoroSettings.soundEnabled ? "Disable" : "Enable"} sound notifications`}
+                          >
+                            {pomodoroSettings.soundEnabled ? "🔊 On" : "🔇 Off"}
+                          </Button>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <label className="text-sm font-medium">Browser Notifications</label>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              if (pomodoroSettings.notificationsEnabled) {
+                                setPomodoroSettings((prev) => ({ ...prev, notificationsEnabled: false }))
+                              } else {
+                                requestNotificationPermission()
+                              }
+                            }}
+                            aria-label={`${pomodoroSettings.notificationsEnabled ? "Disable" : "Enable"} browser notifications`}
+                          >
+                            {pomodoroSettings.notificationsEnabled ? "🔔 On" : "🔕 Off"}
+                          </Button>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <label className="text-sm font-medium">Auto-start Next Session</label>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() =>
+                              setPomodoroSettings((prev) => ({ ...prev, autoStartNext: !prev.autoStartNext }))
+                            }
+                            aria-label={`${pomodoroSettings.autoStartNext ? "Disable" : "Enable"} auto-start next session`}
+                          >
+                            {pomodoroSettings.autoStartNext ? "▶️ On" : "⏸️ Off"}
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex justify-center gap-4" role="group" aria-label="Pomodoro timer controls">
+                    <Button
+                      onClick={pomodoroRunning ? pausePomodoro : startPomodoro}
+                      size="lg"
+                      className="bg-red-600 hover:bg-red-700 min-w-[44px] h-[44px]"
+                      disabled={pomodoroTime === 0}
+                      aria-label={pomodoroRunning ? "Pause Pomodoro timer" : "Start Pomodoro timer"}
+                    >
+                      {pomodoroRunning ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
+                    </Button>
+                    <Button
+                      onClick={resetPomodoro}
+                      size="lg"
+                      variant="outline"
+                      className="min-w-[44px] h-[44px] bg-transparent"
+                      aria-label="Reset Pomodoro timer"
+                    >
+                      <RotateCcw className="w-5 h-5" />
+                    </Button>
+                  </div>
+
+                  {pomodoroOriginal > 0 && (
+                    <div
+                      className="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-3"
+                      role="progressbar"
+                      aria-valuenow={((pomodoroOriginal - pomodoroTime) / pomodoroOriginal) * 100}
+                      aria-valuemin={0}
+                      aria-valuemax={100}
+                      aria-label="Pomodoro session progress"
+                    >
+                      <div
+                        className={cn(
+                          "h-3 rounded-full transition-all duration-1000",
+                          pomodoroMode === "focus" ? "bg-red-600" : "bg-green-600",
+                        )}
+                        style={{ width: `${((pomodoroOriginal - pomodoroTime) / pomodoroOriginal) * 100}%` }}
+                      />
+                    </div>
+                  )}
+
+                  <div className="text-center text-sm text-gray-600 dark:text-gray-400">
+                    <p>
+                      Focus for {pomodoroSettings.focusDuration} minutes, then take a {pomodoroSettings.breakDuration}
+                      -minute break.
+                    </p>
+                    <p className="mt-1">Stay productive with the Pomodoro Technique! 🍅</p>
+                    {dailyStats.pomodorosCompleted > 0 && (
+                      <p className="mt-2 font-semibold text-red-600">
+                        Today: {dailyStats.pomodorosCompleted} Pomodoros completed ({dailyStats.focusTimeTotal} minutes
+                        focused)
+                      </p>
                     )}
                   </div>
-                </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
 
-                {!pomodoroRunning && pomodoroTime > 0 && (
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium mb-2">Focus Duration (min)</label>
-                        <Input
-                          type="number"
-                          value={pomodoroSettings.focusDuration}
-                          onChange={(e) => {
-                            const value = Number(e.target.value) || 25
-                            setPomodoroSettings((prev) => ({ ...prev, focusDuration: value }))
-                            if (pomodoroMode === "focus") {
-                              const newTime = value * 60
-                              setPomodoroTime(newTime)
-                              setPomodoroOriginal(newTime)
-                            }
-                          }}
-                          className="text-center h-12"
-                          min="1"
-                          max="60"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium mb-2">Break Duration (min)</label>
-                        <Input
-                          type="number"
-                          value={pomodoroSettings.breakDuration}
-                          onChange={(e) => {
-                            const value = Number(e.target.value) || 5
-                            setPomodoroSettings((prev) => ({ ...prev, breakDuration: value }))
-                            if (pomodoroMode === "break") {
-                              const newTime = value * 60
-                              setPomodoroTime(newTime)
-                              setPomodoroOriginal(newTime)
-                            }
-                          }}
-                          className="text-center h-12"
-                          min="1"
-                          max="30"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <label className="text-sm font-medium">Sound Notifications</label>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setPomodoroSettings((prev) => ({ ...prev, soundEnabled: !prev.soundEnabled }))}
-                        >
-                          {pomodoroSettings.soundEnabled ? "🔊 On" : "🔇 Off"}
-                        </Button>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <label className="text-sm font-medium">Browser Notifications</label>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            if (pomodoroSettings.notificationsEnabled) {
-                              setPomodoroSettings((prev) => ({ ...prev, notificationsEnabled: false }))
-                            } else {
-                              requestNotificationPermission()
-                            }
-                          }}
-                        >
-                          {pomodoroSettings.notificationsEnabled ? "🔔 On" : "🔕 Off"}
-                        </Button>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <label className="text-sm font-medium">Auto-start next session</label>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() =>
-                            setPomodoroSettings((prev) => ({ ...prev, autoStartNext: !prev.autoStartNext }))
-                          }
-                        >
-                          {pomodoroSettings.autoStartNext ? "▶️ On" : "⏸️ Off"}
-                        </Button>
-                      </div>
-                    </div>
+            {/* Mobile Bottom Navigation */}
+            <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-gray-200 dark:border-slate-700">
+              <TabsList
+                className="grid w-full grid-cols-6 h-16 bg-transparent"
+                role="tablist"
+                aria-label="Mobile navigation"
+              >
+                <TabsTrigger
+                  value="stopwatch"
+                  className="flex-col gap-1 h-full data-[state=active]:bg-purple-100 dark:data-[state=active]:bg-purple-900/50"
+                  role="tab"
+                  aria-label="Precision Stopwatch"
+                >
+                  <Timer className="w-4 h-4" aria-hidden="true" />
+                  <span className="text-xs">Stopwatch</span>
+                </TabsTrigger>
+                <TabsTrigger
+                  value="timer"
+                  className="flex-col gap-1 h-full data-[state=active]:bg-pink-100 dark:data-[state=active]:bg-pink-900/50"
+                  role="tab"
+                  aria-label="Countdown Timer"
+                >
+                  <Timer className="w-4 h-4" aria-hidden="true" />
+                  <span className="text-xs">Timer</span>
+                </TabsTrigger>
+                <TabsTrigger
+                  value="clock"
+                  className="flex-col gap-1 h-full data-[state=active]:bg-blue-100 dark:data-[state=active]:bg-blue-900/50"
+                  role="tab"
+                  aria-label="World Clock"
+                >
+                  <Clock className="w-4 h-4" aria-hidden="true" />
+                  <span className="text-xs">Clock</span>
+                </TabsTrigger>
+                <TabsTrigger
+                  value="countdown"
+                  className="flex-col gap-1 h-full data-[state=active]:bg-green-100 dark:data-[state=active]:bg-green-900/50"
+                  role="tab"
+                  aria-label="Event Countdown"
+                >
+                  <Target className="w-4 h-4" aria-hidden="true" />
+                  <span className="text-xs">Countdown</span>
+                </TabsTrigger>
+                <TabsTrigger
+                  value="datediff"
+                  className="flex-col gap-1 h-full data-[state=active]:bg-orange-100 dark:data-[state=active]:bg-orange-900/50"
+                  role="tab"
+                  aria-label="Date Calculator"
+                >
+                  <Calendar className="w-4 h-4" aria-hidden="true" />
+                  <span className="text-xs">Date Diff</span>
+                </TabsTrigger>
+                <TabsTrigger
+                  value="pomodoro"
+                  className="flex-col gap-1 h-full data-[state=active]:bg-red-100 dark:data-[state=active]:bg-red-900/50"
+                  role="tab"
+                  aria-label="Pomodoro Focus Timer"
+                >
+                  <div className="text-sm" aria-hidden="true">
+                    🍅
                   </div>
-                )}
+                  <span className="text-xs">Pomodoro</span>
+                </TabsTrigger>
+              </TabsList>
+            </div>
+          </Tabs>
+        </main>
 
-                <div className="flex justify-center gap-4">
-                  <Button
-                    onClick={pomodoroRunning ? pausePomodoro : startPomodoro}
-                    size="lg"
-                    className="bg-red-600 hover:bg-red-700 min-w-[44px] h-[44px]"
-                    disabled={pomodoroTime === 0}
-                  >
-                    {pomodoroRunning ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
-                  </Button>
-                  <Button
-                    onClick={resetPomodoro}
-                    size="lg"
-                    variant="outline"
-                    className="min-w-[44px] h-[44px] bg-transparent"
-                  >
-                    <RotateCcw className="w-5 h-5" />
-                  </Button>
-                </div>
-
-                {pomodoroOriginal > 0 && (
-                  <div className="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-3">
-                    <div
-                      className={cn(
-                        "h-3 rounded-full transition-all duration-1000",
-                        pomodoroMode === "focus" ? "bg-red-600" : "bg-green-600",
-                      )}
-                      style={{ width: `${((pomodoroOriginal - pomodoroTime) / pomodoroOriginal) * 100}%` }}
-                    />
-                  </div>
-                )}
-
-                <div className="text-center text-sm text-gray-600 dark:text-gray-400">
-                  <p>
-                    Focus for {pomodoroSettings.focusDuration} minutes, then take a {pomodoroSettings.breakDuration}
-                    -minute break.
-                  </p>
-                  <p className="mt-1">Stay productive with the Pomodoro Technique! 🍅</p>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Mobile Bottom Navigation */}
-          <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-gray-200 dark:border-slate-700">
-            <TabsList className="grid w-full grid-cols-6 h-16 bg-transparent">
-              <TabsTrigger
-                value="stopwatch"
-                className="flex-col gap-1 h-full data-[state=active]:bg-purple-100 dark:data-[state=active]:bg-purple-900/50"
-              >
-                <Timer className="w-4 h-4" />
-                <span className="text-xs">Stopwatch</span>
-              </TabsTrigger>
-              <TabsTrigger
-                value="timer"
-                className="flex-col gap-1 h-full data-[state=active]:bg-pink-100 dark:data-[state=active]:bg-pink-900/50"
-              >
-                <Timer className="w-4 h-4" />
-                <span className="text-xs">Timer</span>
-              </TabsTrigger>
-              <TabsTrigger
-                value="clock"
-                className="flex-col gap-1 h-full data-[state=active]:bg-blue-100 dark:data-[state=active]:bg-blue-900/50"
-              >
-                <Clock className="w-4 h-4" />
-                <span className="text-xs">Clock</span>
-              </TabsTrigger>
-              <TabsTrigger
-                value="countdown"
-                className="flex-col gap-1 h-full data-[state=active]:bg-green-100 dark:data-[state=active]:bg-green-900/50"
-              >
-                <Target className="w-4 h-4" />
-                <span className="text-xs">Countdown</span>
-              </TabsTrigger>
-              <TabsTrigger
-                value="datediff"
-                className="flex-col gap-1 h-full data-[state=active]:bg-orange-100 dark:data-[state=active]:bg-orange-900/50"
-              >
-                <Calendar className="w-4 h-4" />
-                <span className="text-xs">Date Diff</span>
-              </TabsTrigger>
-              <TabsTrigger
-                value="pomodoro"
-                className="flex-col gap-1 h-full data-[state=active]:bg-red-100 dark:data-[state=active]:bg-red-900/50"
-              >
-                <div className="text-sm">🍅</div>
-                <span className="text-xs">Pomodoro</span>
-              </TabsTrigger>
-            </TabsList>
-          </div>
-        </Tabs>
+        {/* Keyboard Shortcuts Help (Desktop) */}
+        <aside className="hidden lg:block fixed bottom-4 right-4" role="complementary" aria-label="Keyboard shortcuts">
+          <Card className="p-3 text-xs text-gray-600 dark:text-gray-400 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm">
+            <div className="space-y-1">
+              <div>
+                <kbd className="px-1 py-0.5 bg-gray-200 dark:bg-slate-700 rounded text-xs">S</kbd> Start/Stop
+              </div>
+              <div>
+                <kbd className="px-1 py-0.5 bg-gray-200 dark:bg-slate-700 rounded text-xs">R</kbd> Reset
+              </div>
+              <div>
+                <kbd className="px-1 py-0.5 bg-gray-200 dark:bg-slate-700 rounded text-xs">L</kbd> Lap
+              </div>
+              <div>
+                <kbd className="px-1 py-0.5 bg-gray-200 dark:bg-slate-700 rounded text-xs">←→</kbd> Navigate
+              </div>
+            </div>
+          </Card>
+        </aside>
       </div>
-
-      {/* Keyboard Shortcuts Help (Desktop) */}
-      <div className="hidden lg:block fixed bottom-4 right-4">
-        <Card className="p-3 text-xs text-gray-600 dark:text-gray-400 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm">
-          <div className="space-y-1">
-            <div>
-              <kbd className="px-1 py-0.5 bg-gray-200 dark:bg-slate-700 rounded text-xs">S</kbd> Start/Stop
-            </div>
-            <div>
-              <kbd className="px-1 py-0.5 bg-gray-200 dark:bg-slate-700 rounded text-xs">R</kbd> Reset
-            </div>
-            <div>
-              <kbd className="px-1 py-0.5 bg-gray-200 dark:bg-slate-700 rounded text-xs">L</kbd> Lap
-            </div>
-            <div>
-              <kbd className="px-1 py-0.5 bg-gray-200 dark:bg-slate-700 rounded text-xs">←→</kbd> Navigate
-            </div>
-          </div>
-        </Card>
-      </div>
-    </div>
+    </>
   )
 }

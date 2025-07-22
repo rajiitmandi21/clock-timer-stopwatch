@@ -1,0 +1,21 @@
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://chronochaos.app/sitemap.xml
+
+# Crawl-delay for respectful crawling
+Crawl-delay: 1
+
+# Block access to admin or private areas (if any)
+Disallow: /admin/
+Disallow: /private/
+Disallow: /.well-known/
+
+# Allow all productivity timer related content
+Allow: /#stopwatch
+Allow: /#timer
+Allow: /#clock
+Allow: /#countdown
+Allow: /#datediff
+Allow: /#pomodoro
