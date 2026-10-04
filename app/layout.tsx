@@ -1,3 +1,4 @@
+import Script from "next/script"
 import type React from "react"
 import type { Metadata } from "next"
 import { Inter } from "next/font/google"
@@ -158,7 +159,7 @@ function gtag(){if(window.self === window.top && ["timer.rajsharma.space", "time
 gtag('js', new Date());
 gtag('consent', 'default', { ad_storage: 'denied', ad_user_data: 'denied', ad_personalisation: 'denied' });
 gtag('config', '${gaId}', { allow_google_signals: false, allow_ad_personalization_signals: false });` }} />
-        <script id="vercel-web-analytics" dangerouslySetInnerHTML={{ __html: `(function () {
+        <Script id="vercel-web-analytics" strategy="afterInteractive" dangerouslySetInnerHTML={{ __html: `(function () {
   if (!(window.self === window.top && ["timer.rajsharma.space", "time.rajsharma.space", "timer.sharma.bio"].includes(window.location.hostname))) return;
   window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
   window.va('beforeSend', function (event) {
