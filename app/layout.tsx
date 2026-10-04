@@ -151,6 +151,14 @@ export default function RootLayout({
           }}
         />
       </head>
+      <head>
+        <script async src="https://www.googletagmanager.com/gtag/js?id=G-EQK3VVB9WB" />
+        <script dangerouslySetInnerHTML={{ __html: `window.dataLayer = window.dataLayer || [];
+function gtag(){if(window.self === window.top) dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('consent', 'default', { ad_storage: 'denied', ad_user_data: 'denied', ad_personalisation: 'denied' });
+gtag('config', 'G-EQK3VVB9WB', { allow_google_signals: false, allow_ad_personalization_signals: false });` }} />
+      </head>
       <body className={inter.className}>{children}</body>
     </html>
   )
