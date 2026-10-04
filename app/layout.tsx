@@ -89,6 +89,8 @@ export const metadata: Metadata = {
     generator: 'v0.dev'
 }
 
+const gaId = process.env.NEXT_PUBLIC_GA_ID || "G-EQK3VVB9WB"
+
 export default function RootLayout({
   children,
 }: {
@@ -150,12 +152,28 @@ export default function RootLayout({
             }),
           }}
         />
-        <script async src="https://www.googletagmanager.com/gtag/js?id=G-EQK3VVB9WB" />
+        <script async src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`} />
         <script dangerouslySetInnerHTML={{ __html: `window.dataLayer = window.dataLayer || [];
 function gtag(){if(window.self === window.top && ["timer.rajsharma.space", "time.rajsharma.space", "timer.sharma.bio"].includes(window.location.hostname)) dataLayer.push(arguments);}
 gtag('js', new Date());
 gtag('consent', 'default', { ad_storage: 'denied', ad_user_data: 'denied', ad_personalisation: 'denied' });
-gtag('config', 'G-EQK3VVB9WB', { allow_google_signals: false, allow_ad_personalization_signals: false });` }} />
+gtag('config', '${gaId}', { allow_google_signals: false, allow_ad_personalization_signals: false });` }} />
+        <script id="vercel-web-analytics" dangerouslySetInnerHTML={{ __html: `(function () {
+  if (!(window.self === window.top && ["timer.rajsharma.space", "time.rajsharma.space", "timer.sharma.bio"].includes(window.location.hostname))) return;
+  window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+  window.va('beforeSend', function (event) {
+    var url = new URL(event.url);
+    url.hash = '';
+    Array.from(url.searchParams.keys()).forEach(function (key) { if (!/^utm_(source|medium|campaign|term|content|id)$/.test(key)) url.searchParams.delete(key); });
+
+    return Object.assign({}, event, { url: url.toString() });
+  });
+  if (!document.querySelector('script[src="/_vercel/insights/script.js"]')) {
+    var script = document.createElement('script');
+    script.src = '/_vercel/insights/script.js'; script.defer = true;
+    document.head.appendChild(script);
+  }
+})();` }} />
       </head>
       <body className={inter.className}>{children}</body>
     </html>
