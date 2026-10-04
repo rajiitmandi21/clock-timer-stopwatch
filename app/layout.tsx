@@ -150,8 +150,6 @@ export default function RootLayout({
             }),
           }}
         />
-      </head>
-      <head>
         <script async src="https://www.googletagmanager.com/gtag/js?id=G-EQK3VVB9WB" />
         <script dangerouslySetInnerHTML={{ __html: `window.dataLayer = window.dataLayer || [];
 function gtag(){if(window.self === window.top) dataLayer.push(arguments);}
